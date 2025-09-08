@@ -56,3 +56,53 @@ body {
 .animate-slideDown {
   animation: slideDown 0.3s ease-in forwards;
 }
+
+/* ===== Dark Mode Global Overrides (không cần sửa component) ===== */
+@layer utilities {
+  /* Nền & bề mặt */
+  .dark .bg-white { background-color: #111827 !important; }     /* gray-900 */
+  .dark .bg-gray-50 { background-color: #1f2937 !important; }    /* gray-800 */
+  .dark .bg-gray-100 { background-color: #1f2937 !important; }   /* gray-800 */
+  .dark .bg-gray-200 { background-color: #374151 !important; }   /* gray-700 */
+  .dark .bg-slate-50 { background-color: #0f172a !important; }   /* slate-900 */
+
+  /* Chữ */
+  .dark .text-gray-900, 
+  .dark .text-gray-800, 
+  .dark .text-gray-700 { color: #e5e7eb !important; }            /* gray-200 */
+  .dark .text-gray-600 { color: #d1d5db !important; }            /* gray-300 */
+
+  /* Border & divider */
+  .dark .border-gray-200, 
+  .dark .border-gray-300, 
+  .dark .border { border-color: #374151 !important; }            /* gray-700 */
+
+  /* Table zebra */
+  .dark tr.bg-gray-50 { background-color: #1f2937 !important; }  /* gray-800 */
+
+  /* Input / Select */
+  .dark input, 
+  .dark select, 
+  .dark textarea { 
+    background-color: #111827 !important; 
+    color: #e5e7eb !important; 
+    border-color: #374151 !important;
+  }
+
+  /* Card shadow cảm giác nhẹ hơn trên nền tối (tuỳ chọn) */
+  .dark .shadow { box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important; }
+
+  /* Header gradient (ví dụ thường dùng) */
+  .dark .from-green-500.to-green-600 {
+    background-image: linear-gradient(to right, #065f46, #047857) !important; /* emerald-700 -> green-700 */
+    color: #ecfeff !important; /* text cho header */
+  }
+
+  /* Badge/trạng thái nếu đang dùng text màu thuần */
+  .dark .text-green-600 { color: #34d399 !important; }           /* emerald-400 */
+  .dark .text-blue-600 { color: #60a5fa !important; }            /* blue-400 */
+  .dark .text-red-600 { color: #f87171 !important; }             /* red-400 */
+
+  /* Link hover dễ nhìn hơn */
+  .dark a:hover { color: #93c5fd !important; }
+}

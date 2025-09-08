@@ -42,7 +42,7 @@ export default function AdminDashboard({ revenueOrders = [] }) {
       <section className="flex flex-col md:flex-row gap-8">
         {/* Bảng thông báo */}
         <div className="flex-1 bg-white rounded-2xl shadow-lg p-7 min-w-[300px]">
-          <h2 className="font-semibold text-lg mb-3 text-indigo-800 flex items-center gap-2">
+          <h2 className="font-semibold text-lg mb-3 text-indigo-500 flex items-center gap-2">
             <span>📢</span> Thông báo hệ thống
           </h2>
           <ul className="space-y-4">
@@ -60,7 +60,7 @@ export default function AdminDashboard({ revenueOrders = [] }) {
 
         {/* Top sản phẩm bán chạy */}
         <div className="flex-1 bg-white rounded-2xl shadow-lg p-7">
-          <h2 className="font-semibold text-lg mb-3 text-indigo-800 flex items-center gap-2">
+          <h2 className="font-semibold text-lg mb-3 text-indigo-500 flex items-center gap-2">
             <span>🔥</span> Top sản phẩm bán chạy
           </h2>
           <ul className="divide-y">
@@ -99,7 +99,7 @@ export default function AdminDashboard({ revenueOrders = [] }) {
         {/* Tiêu đề & chọn ngày */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-indigo-600 flex items-center gap-2">
               🧾 Bảng doanh thu & đơn hàng
             </h2>
             {/* DatePicker: CHỈNH THÊM Ở ĐÂY */}
