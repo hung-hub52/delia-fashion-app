@@ -21,13 +21,15 @@ export default function LoginPage() {
       router.push("/"); // khách hàng về trang chủ
     }
   };
-
-  return (
-    <section className="w-full bg-white px-6 py-12">
-      <div className="max-w-md mx-auto text-gray-800">
+return (
+  <section className="w-full bg-white px-6 py-12">
+    <div className="max-w-md mx-auto text-gray-800">
+      {/* Khung xám bao quanh form */}
+      <div className="bg-gray-50 p-8 rounded-lg shadow">
         <h1 className="text-2xl font-bold mb-6 text-center uppercase">
           Đăng nhập
         </h1>
+
         <form className="space-y-4" onSubmit={handleLogin}>
           <div>
             <label className="block text-sm font-medium mb-1">Email *</label>
@@ -40,6 +42,7 @@ export default function LoginPage() {
               required
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">Mật khẩu *</label>
             <div className="relative">
@@ -60,6 +63,7 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
+
           <button
             type="submit"
             className="w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-500 transition"
@@ -67,6 +71,7 @@ export default function LoginPage() {
             Đăng nhập
           </button>
         </form>
+
         <p className="mt-6 text-center text-sm">
           Chưa có tài khoản?{" "}
           <Link href="/account/register" className="text-pink-600 font-medium">
@@ -74,6 +79,8 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
-    </section>
-  );
+    </div>
+  </section>
+);
+
 }

@@ -31,23 +31,7 @@ export default function Footer() {
 
       {/* Hàng dưới */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 px-6 py-12">
-        {/* Đăng ký email */}
-        <div className="md:col-span-1">
-          <h4 className="text-xl font-bold mb-4">Đăng ký nhận email ưu đãi</h4>
-          <p className="text-sm text-gray-600 mb-4">
-            Trở thành một trong những người đầu tiên nhận thông tin về mẫu mã
-            mới và ưu đãi dành riêng cho bạn qua email.
-          </p>
-          <div className="flex">
-            <input
-              type="email"
-              placeholder="E-mail"
-              className="flex-1 border rounded-l px-4 py-2 focus:outline-none"
-            />
-            <button className="bg-gray-200 px-4 rounded-r">➤</button>
-          </div>
-        </div>
-
+        
         {/* Khám phá */}
         <div>
           <h4 className="font-semibold mb-4">Khám phá</h4>
