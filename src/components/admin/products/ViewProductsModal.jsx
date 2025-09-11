@@ -277,9 +277,6 @@ export default function ViewProductsModal({
                   >
                     <option value="">--Đơn vị--</option>
                     <option value="Cái">Cái</option>
-                    <option value="Kg">Kg</option>
-                    <option value="Gam">Gam</option>
-                    <option value="Thùng">Thùng</option>
                   </select>
                 </div>
               )}

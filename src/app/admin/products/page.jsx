@@ -188,63 +188,96 @@ export default function ProductsPage() {
                 <th className="p-2 text-left">Danh mục</th>
                 <th className="p-2 text-left">Số lượng nhập</th>
                 <th className="p-2 text-left">Giá bán</th>
+                <th className="p-2 text-center">Trạng thái</th>
                 <th className="p-2 text-center">Hành động</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row, idx) => (
-                <tr
-                  key={row.id || idx}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="p-2">{idx + 1}</td>
-                  <td className="p-2">{row.name}</td>
-                  <td className="p-2">
-                    {row.parentCategory
-                      ? `${row.parentCategory} - ${row.category}`
-                      : row.category}
-                  </td>
+              {filtered.map((row, idx) => {
+                // ✅ Nếu stock = 0 thì override thành Hết hàng
+                const autoStatus = row.stock > 0 ? "Còn hàng" : "Hết hàng";
+                const status = row.status || autoStatus;
 
-                  {/* ✅ lấy từ stock */}
-                  <td className="p-2">
-                    {row.stock != null
-                      ? `${row.stock} ${row.unit || ""}`
-                      : "---"}
-                  </td>
+                return (
+                  <tr
+                    key={row.id || idx}
+                    className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  >
+                    <td className="p-2">{idx + 1}</td>
+                    <td className="p-2">{row.name}</td>
+                    <td className="p-2">
+                      {row.parentCategory
+                        ? `${row.parentCategory} - ${row.category}`
+                        : row.category}
+                    </td>
 
-                  <td className="p-2">
-                    {row.retailPrice != null
-                      ? `${row.retailPrice.toLocaleString("vi-VN")} ₫`
-                      : "-"}
-                  </td>
+                    <td className="p-2">
+                      {row.stock != null
+                        ? `${row.stock} ${row.unit || ""}`
+                        : "---"}
+                    </td>
 
-                  <td className="p-2 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        className="rounded-md bg-sky-500 p-1 text-white hover:bg-sky-600"
-                        title="Xem"
-                        onClick={() => {
-                          setSelectedProduct(row);
-                          setViewOpen(true);
-                        }}
+                    <td className="p-2">
+                      {row.retailPrice != null
+                        ? `${row.retailPrice.toLocaleString("vi-VN")} ₫`
+                        : "-"}
+                    </td>
+                    
+                    <td className="p-2 text-center">
+                      <select
+                        value={status}
+                        onChange={(e) =>
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p.id === row.id
+                                ? { ...p, status: e.target.value }
+                                : p
+                            )
+                          )
+                        }
+                        className={`border rounded-md px-2 py-1 text-sm font-medium
+                    ${
+                      status === "Còn hàng"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
                       >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        className="rounded-md bg-red-500 p-1 text-white hover:bg-red-600"
-                        title="Xóa"
-                        onClick={() => confirmDelete(row.id)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <option value="Còn hàng">Còn hàng</option>
+                        <option value="Hết hàng">Hết hàng</option>
+                        <option value="Ngừng kinh doanh">
+                          Ngừng kinh doanh
+                        </option>
+                      </select>
+                    </td>
+
+                    <td className="p-2 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          className="rounded-md bg-sky-500 p-1 text-white hover:bg-sky-600"
+                          title="Xem"
+                          onClick={() => {
+                            setSelectedProduct(row);
+                            setViewOpen(true);
+                          }}
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          className="rounded-md bg-red-500 p-1 text-white hover:bg-red-600"
+                          title="Xóa"
+                          onClick={() => confirmDelete(row.id)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-gray-400">
+                  <td colSpan={7} className="p-6 text-center text-gray-400">
                     Chưa có dữ liệu
                   </td>
                 </tr>

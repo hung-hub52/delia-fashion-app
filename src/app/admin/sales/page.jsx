@@ -115,7 +115,6 @@ export default function SalesPage() {
             <tr className="bg-gradient-to-r from-red-500 to-orange-300 text-white text-left">
               <th className="p-3">Mã khuyến mãi</th>
               <th className="p-3">Mô tả</th>
-              <th className="p-3 text-center">Giảm</th>
               <th className="p-3 text-center">Trạng thái</th>
               <th className="p-3 text-center">Ngày bắt đầu</th>
               <th className="p-3 text-center">Ngày kết thúc</th>
@@ -130,7 +129,6 @@ export default function SalesPage() {
               >
                 <td className="p-3 font-semibold">{s.code}</td>
                 <td className="p-3">{s.description}</td>
-                <td className="p-3 text-center">{s.discount}</td>
                 <td className="p-3 text-center">
                   <SaleStatusBadge status={s.dynamicStatus} />
                 </td>

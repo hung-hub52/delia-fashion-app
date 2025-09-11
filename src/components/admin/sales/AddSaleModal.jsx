@@ -119,20 +119,6 @@ export default function AddSaleModal({ open, onClose, onAdd }) {
 
           <div>
             <label className="mb-1 block text-sm font-medium">
-              ĐIỀU KIỆN: Đơn tối thiểu (₫)
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={minOrder}
-              onChange={(e) => setMinOrder(e.target.value)}
-              placeholder="VD: 200000"
-              className="w-full rounded-md border px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
               Giới hạn số lượng
             </label>
             <input
