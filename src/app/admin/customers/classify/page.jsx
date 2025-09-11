@@ -22,28 +22,15 @@ const customersFake = [
     totalOrders: 21,
     stopDate: "—",
     lastVisit: "10/07/2025",
-    group: "Vàng",
+    group: "Khách mới",
   },
  
-  {
-    id: 4,
-    code: "45678",
-    name: "Lê D",
-    totalOrders: 0,
-    stopDate: "15/07/2025",
-    lastVisit: "—",
-    group: "Ngừng dịch vụ",
-  },
-  // ...thêm các nhóm khác
 ];
 
 // Danh sách nhóm và tên hiển thị
 const groups = [
   { key: "VIP", name: "Hạng VIP" },
-  { key: "Vàng", name: "Hạng Vàng" },
-  { key: "Bạc", name: "Hạng Bạc" },
   { key: "Khách mới", name: "Khách mới" },
-  { key: "Ngừng dịch vụ", name: "Ngừng dịch vụ" },
 ];
 
 export default function ClassifyPage() {

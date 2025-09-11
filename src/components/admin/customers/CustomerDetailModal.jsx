@@ -42,7 +42,7 @@ export default function CustomerDetailModal({ customer, onClose }) {
             </span>
           </div>
           <div>
-            <b>Nhóm:</b>{" "}
+            <b>Phân Loại:</b>{" "}
             <span
               className={
                 customer.group === "VIP"

@@ -9,13 +9,15 @@ export default function Footer() {
           <Truck className="mx-auto mb-3" size={28} />
           <h4 className="font-semibold">Miễn phí ship</h4>
           <p className="text-sm text-gray-600">
-            Toàn quốc cho đơn hàng từ 150K+
+            Quảng Nam - Đà Nẵng cho tất cả đơn hàng
           </p>
         </div>
         <div>
           <Headphones className="mx-auto mb-3" size={28} />
           <h4 className="font-semibold">Tư vấn nhiệt tình</h4>
-          <p className="text-sm text-gray-600">Junie sẵn sàng hỗ trợ 24/7</p>
+          <p className="text-sm text-gray-600">
+            DELIA ELLY hỗ trợ 24/7
+          </p>
         </div>
         <div>
           <Tag className="mx-auto mb-3" size={28} />
@@ -25,18 +27,17 @@ export default function Footer() {
         <div>
           <Gem className="mx-auto mb-3" size={28} />
           <h4 className="font-semibold">Đảm bảo chất lượng</h4>
-          <p className="text-sm text-gray-600">Junie cam kết hài lòng</p>
+          <p className="text-sm text-gray-600">DELIA ELLY luôn uy tín </p>
         </div>
       </div>
 
       {/* Hàng dưới */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 px-6 py-12">
-        
         {/* Khám phá */}
         <div>
           <h4 className="font-semibold mb-4">Khám phá</h4>
           <ul className="space-y-2 text-sm">
-            {["Bông tai", "Dây chuyền", "Vòng tay", "Nhẫn", "Lắc chân"].map(
+            {["Nam", "Nữ", "Bộ Sưu Tập",].map(
               (item) => (
                 <li key={item} className="hover:text-pink-600 cursor-pointer">
                   {item}
@@ -66,17 +67,19 @@ export default function Footer() {
 
         {/* Hộ kinh doanh */}
         <div>
-          <h4 className="font-semibold mb-4">Hộ kinh doanh JUNIE</h4>
+          <h4 className="font-semibold mb-4">Hộ kinh doanh DELIA ELLY</h4>
           <p className="text-sm text-gray-700">
-            742 Lê Thanh Nghị, TP. Hải Dương, Hải Dương
+            Số 92, Đ. QUẢNG NAM, P. NGŨ HÀNH SƠN, TP. ĐÀ NẴNG
           </p>
           <p className="text-sm text-gray-700 mt-2">
-            ĐKKD số 0448018757 cấp ngày 07/10/2021 tại Hải Dương • MST:
-            8411247921
+            ĐKKD số 30041975 cấp ngày 07/10/2018 tại ĐÀ NẴNG
+          </p>
+          <p className="text-sm text-gray-700 mt-2">
+            MST: 8402091945
           </p>
           <p className="text-sm font-semibold mt-3">
             Hotline:{" "}
-            <span className="text-pink-600 font-bold">08 626 58643</span>
+            <span className="text-pink-600 font-bold">08 555 9999</span>
           </p>
         </div>
       </div>
