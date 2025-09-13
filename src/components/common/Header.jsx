@@ -1,3 +1,5 @@
+//src/components/common/Header.jsx
+
 "use client";
 import Link from "next/link";
 import { User, ShoppingCart, Home } from "lucide-react";
@@ -6,21 +8,12 @@ import { useEffect, useState } from "react";
 import NavDropdown from "@/components/common/NavDropdown";
 import MegaMenu from "@/components/common/MegaMenu";
 
+// Import menu data
+import { nuItems, namItems, collectionSections } from "@/data/menus";
+
 export default function Header() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
-
-  // Dropdown data
-  const nuItems = [
-    { name: "Đầm", href: "/nu/dam" },
-    { name: "Áo nữ", href: "/nu/ao" },
-    { name: "Quần nữ", href: "/nu/quan" },
-  ];
-  const namItems = [
-    { name: "Áo sơ mi", href: "/nam/somi" },
-    { name: "Quần âu", href: "/nam/quan" },
-    { name: "Giày dép", href: "/nam/giay" },
-  ];
 
   // Scroll effect
   useEffect(() => {
@@ -38,18 +31,13 @@ export default function Header() {
       {/* Banner chạy chữ */}
       <div className="bg-gray-100 text-gray-800 font-bold py-2 text-sm overflow-hidden relative">
         <div className="marquee flex">
-          <div className="marquee-content flex">
-            
-            <span className="mr-20">
-              MIỄN PHÍ SHIP QUẢNG NAM - ĐÀ NẴNG – ĐỔI TRẢ TRONG 7 NGÀY
-            </span>
-          </div>
-          <div className="marquee-content flex">
-
-            <span className="mr-20">
-              MIỄN PHÍ SHIP QUẢNG NAM - ĐÀ NẴNG – ĐỔI TRẢ TRONG 7 NGÀY
-            </span>
-          </div>
+          {Array(4)
+            .fill("MIỄN PHÍ SHIP QUẢNG NAM - ĐÀ NẴNG – ĐỔI TRẢ TRONG 7 NGÀY")
+            .map((text, i) => (
+              <div key={i} className="marquee-content flex">
+                <span className="mr-20">{text}</span>
+              </div>
+            ))}
         </div>
       </div>
 
@@ -93,47 +81,7 @@ export default function Header() {
 
             {/* Mega menu Bộ sưu tập */}
             <li>
-              <MegaMenu
-                title="Bộ sưu tập"
-                sections={[
-                  {
-                    title: "Túi Xách",
-                    items: [
-                      { name: "Túi Xách Nam", href: "/collection/croc" },
-                      { name: "Túi Xách Nữ", href: "/collection/fleurs" },
-                    ],
-                  },
-                  {
-                    title: "Ví Da",
-                    items: [
-                      { name: "Ví Da Nữ", href: "/collection/timeless" },
-                      { name: "Ví Da Nam", href: "/collection/rotin" },
-                    ],
-                  },
-                  {
-                    title: "Paris Vibes",
-                    items: [
-                      { name: "Le Chic Parisien", href: "/collection/chic" },
-                      { name: "ELLY De Paris", href: "/collection/paris" },
-                      { name: "Luxe De Paris", href: "/collection/luxe" },
-                    ],
-                  },
-                  {
-                    title: "Khác",
-                    items: [
-                      {
-                        name: "Vietnam Heritage",
-                        href: "/collection/heritage",
-                      },
-                      {
-                        name: "Classique De Paris",
-                        href: "/collection/classique",
-                      },
-                      { name: "Hommes de Classe", href: "/collection/hommes" },
-                    ],
-                  },
-                ]}
-              />
+              <MegaMenu title="Bộ sưu tập" sections={collectionSections} />
             </li>
 
             {/* Sale */}

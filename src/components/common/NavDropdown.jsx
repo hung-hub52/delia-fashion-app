@@ -3,7 +3,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
-export default function NavDropdown({ title, items }) {
+export default function NavDropdown({ title, items = [] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -40,7 +40,7 @@ export default function NavDropdown({ title, items }) {
 
       {/* Dropdown */}
       <AnimatePresence>
-        {open && (
+        {open && items.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
