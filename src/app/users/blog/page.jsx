@@ -51,6 +51,9 @@ const videos = [
       `10. Lắc Chân
         Lắc chân là món phụ kiện nhỏ nhưng tạo nên sức hút lớn, mang lại nét duyên dáng và quyến rũ cho phái đẹp. 
         Một chiếc lắc bạc, vàng hay đính charm nhỏ xinh có thể dễ dàng kết hợp cùng sneaker giúp bạn toát lên vẻ trẻ trung và tràn đầy sức sống.`,
+
+      `11. Nguồn video youtube 
+      https://www.youtube.com/watch?v=SZh466xndK4`,
     ],
   },
   {
@@ -68,6 +71,9 @@ const videos = [
       `Khi đi làm, bạn có thể chọn túi xách màu be phối cùng giày đen để tạo sự chuyên nghiệp. 
     Ra phố, hãy thử kính mát nâu kết hợp với sneaker trắng cho vẻ trẻ trung, năng động. 
     Còn trong buổi tiệc tối, một đôi giày cao gót ánh kim cùng clutch đen nhỏ gọn sẽ khiến bạn nổi bật mà vẫn tinh tế.`,
+
+      `Nguồn video youtube 
+    https://www.youtube.com/watch?v=d1feD1ETDHA`,
     ],
   },
 ];
@@ -85,7 +91,7 @@ export default function BlogPage() {
           Cập nhật những xu hướng phụ kiện thời trang mới nhất cùng DELIA ELLY –
           nơi bạn tìm thấy cảm hứng phối đồ và các mẹo hay để làm đẹp phong cách
           mỗi ngày. Dưới đây có các bài viết sẽ giúp cho bạn phối những món phụ kiện 
-          trở nên sang trọng nhất
+          trở nên sang trọng nhất.
         </p>
 
         {/* ✅ Danh sách video */}

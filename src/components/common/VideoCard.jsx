@@ -46,12 +46,15 @@ export default function VideoCard({ video }) {
 
       {/* Mô tả bên phải */}
       <div className="bg-white rounded-lg shadow-md p-6 flex flex-col justify-center">
-        <h2 className="text-2xl font-bold text-pink-600 mb-4">{video.title}</h2>
+        <h2 className="text-2xl font-bold text-pink-600 mb-4 text-center">
+          {video.title}
+        </h2>
         <Swiper
           modules={[Navigation, Pagination]}
           navigation
           pagination={{ clickable: true }}
           loop={true}
+          speed={700}
           className="w-full px-12"
         >
           {video.slides.map((slide, idx) => (
