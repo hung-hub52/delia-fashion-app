@@ -84,26 +84,12 @@ export default function Header() {
               <MegaMenu title="Bộ sưu tập" sections={collectionSections} />
             </li>
 
-            {/* Sale */}
-            <li>
-              <Link
-                href="/sale"
-                className={`px-2 transition-colors ${
-                  pathname.startsWith("/sale")
-                    ? "text-pink-600 border-b-2 border-pink-600 pb-1"
-                    : "text-gray-800 hover:text-pink-600"
-                } text-sm md:text-base font-medium tracking-wide uppercase`}
-              >
-                Sale
-              </Link>
-            </li>
-
             {/* Tin tức */}
             <li>
               <Link
-                href="/blog"
+                href="/users/blog"
                 className={`px-2 transition-colors ${
-                  pathname.startsWith("/blog")
+                  pathname.startsWith("users/blog")
                     ? "text-pink-600 border-b-2 border-pink-600 pb-1"
                     : "text-gray-800 hover:text-pink-600"
                 } text-sm md:text-base font-medium tracking-wide uppercase`}
@@ -111,6 +97,17 @@ export default function Header() {
                 Tin tức
               </Link>
             </li>
+
+            <Link
+              href="/users/about"
+              className={`px-2 transition-colors ${
+                pathname.startsWith("/users/about")
+                  ? "text-pink-600 border-b-2 border-pink-600 pb-1"
+                  : "text-gray-800 hover:text-pink-600"
+              } text-sm md:text-base font-medium tracking-wide uppercase`}
+            >
+              Giới Thiệu
+            </Link>
           </ul>
 
           {/* Search + User + Cart */}

@@ -2,16 +2,110 @@ import { ImgIcon } from "@/utils/ImgIcon";
 
 // Nữ
 export const nuItems = [
-  { name: "Đầm", href: "/nu/dam" },
-  { name: "Áo nữ", href: "/nu/ao" },
-  { name: "Quần nữ", href: "/nu/quan" },
+  {
+    name: "Túi Xách Nữ Công Sở",
+    href: "/women/bag-women",
+  },
+  {
+    name: "Ví Cầm Tay Nữ",
+    href: "/women/wallet-women",
+  },
+  {
+    name: "Balo Da Nữ",
+    href: "/women/backpack-women",
+  },
+  {
+    name: "Kính Mát Nữ Cao Cấp",
+    href: "/women/glasses-women",
+  },
+  {
+    name: "Kính Râm Unisex",
+    href: "/women/glasses-unisex",
+  },
+  {
+    name: "Thắt Lưng Dây Nữ",
+    href: "/women/belt-women",
+  },
+  {
+    name: "Đồng Hồ Bulova",
+    href: "/women/watch-bulova",
+  },
+  {
+    name: "Đồng Hồ Casio",
+    href: "/women/watch-casio",
+  },
+  {
+    name: "Dây Chuyền Đính Đá",
+    href: "/women/necklace-precious",
+  },
+  {
+    name: "Vòng Tay Thạch Anh",
+    href: "/women/bracelet-quartz",
+  },
+  {
+    name: "Lắc Chân Vàng,Bạc Nữ",
+    href: "/women/bracelet-gold",
+  },
+  {
+    name: "Khăn Turban Đội Đầu",
+    href: "/women/scarf-head",
+  },
+  {
+    name: "Mũ Vành Len,Cụp Nữ",
+    href: "/women/hat-women",
+  },
 ];
 
 // Nam
 export const namItems = [
-  { name: "Áo sơ mi", href: "/nam/somi" },
-  { name: "Quần âu", href: "/nam/quan" },
-  { name: "Giày dép", href: "/nam/giay" },
+  {
+    name: "Túi Xách Chéo Nam",
+    href: "/men/bag-men",
+  },
+  {
+    name: "Ví Da Cao Cấp Nam",
+    href: "/men/wallet-men",
+  },
+  {
+    name: "Balo Nam Laptop",
+    href: "/men/backpack-men",
+  },
+  {
+    name: "Kính Nửa Gọng Nam",
+    href: "/men/glasses-men",
+  },
+  {
+    name: "Kính Râm Unisex",
+    href: "/men/glasses-unisex",
+  },
+  {
+    name: "Thắt Lưng Pedro Nam",
+    href: "/men/belt-men",
+  },
+  {
+    name: "Đồng Hồ Casio",
+    href: "/men/watch-casio",
+  },
+  {
+    name: "Đồng Hồ G-Shock",
+    href: "/men/watch-gshock",
+  },
+  {
+    name: "Dây Chuyền Vàng Bạc",
+    href: "/men/necklace-gold",
+  },
+  {
+    name: "Vòng Tay Trầm Hương",
+    href: "/men/bracelet-agarwood",
+  },
+  {
+    name: "Khăn Ống Nam",
+    href: "/men/scarf-men",
+  },
+  {
+    name: "Nón Lưỡi Trai Cotton",
+    href: "/men/hat-peak",
+  },
 ];
 
 // Bộ sưu tập
@@ -21,8 +115,8 @@ export const collectionSections = [
     href: "/collection/bag",
     icon: ImgIcon("/icons/icons8-bag-100.png", "Bag"),
     items: [
-      { name: "Túi Xách Chéo Nam", href: "/collection/bag-man" },
-      { name: "Túi Xách Nữ Công Sở", href: "/collection/bag-female" },
+      { name: "Túi Xách Chéo Nam", href: "/collection/bag-men" },
+      { name: "Túi Xách Nữ Công Sở", href: "/collection/bag-women" },
     ],
   },
   {
@@ -30,8 +124,8 @@ export const collectionSections = [
     href: "/collection/wallet",
     icon: ImgIcon("/icons/icons8-wallet-100.png", "Wallet"),
     items: [
-      { name: "Ví Cầm Tay Nữ", href: "/collection/wallet-female" },
-      { name: "Ví Da Nam Cao Cấp", href: "/collection/wallet-man" },
+      { name: "Ví Cầm Tay Nữ", href: "/collection/wallet-women" },
+      { name: "Ví Da Nam Cao Cấp", href: "/collection/wallet-men" },
     ],
   },
   {
@@ -39,14 +133,14 @@ export const collectionSections = [
     href: "/collection/balo",
     icon: ImgIcon("/icons/icons8-backpack-100.png", "Backpack"),
     items: [
-      { name: "Balo Nam Laptop", href: "/collection/balo-man" },
-      { name: "Balo Da Nữ", href: "/collection/balo-female" },
+      { name: "Balo Nam Laptop", href: "/collection/backpack-men" },
+      { name: "Balo Da Nữ", href: "/collection/backpack-women" },
     ],
   },
   {
     title: "Kính Mắt",
     href: "/collection/glasses",
-    icon: ImgIcon("/icons/icons8-sun-glasses-100.png", "Glasses"),
+    icon: ImgIcon("/icons/icons9-glasses-100.png", "Glasses"),
     items: [
       { name: "Kính Nữ Thời Trang", href: "/collection/glasses-women" },
       { name: "Kính Nửa Gọng Nam", href: "/collection/glasses-men-half" },
@@ -58,24 +152,24 @@ export const collectionSections = [
     href: "/collection/belt",
     icon: ImgIcon("/icons/icons8-belt-100.png", "Belt"),
     items: [
-      { name: "Thắt Lưng Pedro Nam", href: "/collection/belt-man" },
-      { name: "Thắt Lưng Dây Nữ", href: "/collection/belt-female" },
+      { name: "Thắt Lưng Pedro Nam", href: "/collection/belt-men" },
+      { name: "Thắt Lưng Dây Nữ", href: "/collection/belt-women" },
     ],
   },
   {
     title: "Đồng Hồ",
     href: "/collection/watch",
-    icon: ImgIcon("/icons/icons8-wristwatch-100.png", "Watch"),
+    icon: ImgIcon("/icons/icons9-watches-front-view-100.png", "Watch"),
     items: [
-      { name: "Đồng Hồ Rolex", href: "/collection/rolex" },
-      { name: "Đồng Hồ Casio", href: "/collection/casio" },
-      { name: "Đồng Hồ G-Shock", href: "/collection/g-shock" },
+      { name: "Đồng Hồ  Bulova", href: "/collection/watch-bulova" },
+      { name: "Đồng Hồ Casio", href: "/collection/watch-casio" },
+      { name: "Đồng Hồ G-Shock", href: "/collection/watch-gshock" },
     ],
   },
   {
     title: "Dây Chuyền",
     href: "/collection/necklace",
-    icon: ImgIcon("/icons/icons8-necklace-100.png", "Necklace"),
+    icon: ImgIcon("/icons/icons8-gold-necklace-100.png", "Necklace"),
     items: [
       { name: "Dây Chuyền Vàng Bạc", href: "/collection/necklace-gold" },
       { name: "Dây Chuyền Đính Đá", href: "/collection/necklace-precious" },
@@ -84,29 +178,29 @@ export const collectionSections = [
   {
     title: "Vòng Tay",
     href: "/collection/bracelet",
-    icon: ImgIcon("/icons/icons8-bracelet-100.png", "Bracelet"),
+    icon: ImgIcon("/icons/icons8-bangles-gold 100.png", "Bracelet"),
     items: [
-      { name: "Vòng Tay Phong Thủy", href: "/collection/bracelet-agarwood" },
+      { name: "Vòng Tay Trầm Hương", href: "/collection/bracelet-agarwood" },
       { name: "Vòng Tay Thạch Anh", href: "/collection/bracelet-quartz" },
-      { name: "Lắc Tay Vàng Nữ", href: "/collection/bracelet-gold" },
+      { name: "Lắc Chân Vàng,Bạc Nữ", href: "/collection/bracelet-gold" },
     ],
   },
   {
     title: "Khăn Lụa, Len",
     href: "/collection/scarf",
-    icon: ImgIcon("/icons/icons8-scarf-100.png", "Scarf"),
+    icon: ImgIcon("/icons/icons8-ninja-100.png", "Scarf"),
     items: [
-      { name: "Khăn Turban Đội Đầu", href: "/collection/pinner-head" },
-      { name: "Khăn Lụa HUMI", href: "/collection/pinner-hair" },
+      { name: "Băng Đô Turban Tóc", href: "/collection/scarf-turban" },
+      { name: "Khăn Ống Nam", href: "/collection/scarf-men" },
     ],
   },
   {
     title: "Mũi Nón",
     href: "/collection/hat",
-    icon: ImgIcon("/icons/icons8-hat-100.png", "Hat"),
+    icon: ImgIcon("/icons/icons8-hat-man 100.png", "Hat"),
     items: [
       { name: "Nón Lưỡi Trai Cotton", href: "/collection/hat-peak" },
-      { name: "Mũ Vành Len, Cụp Nữ", href: "/collection/hat-wool" },
+      { name: "Mũ Vành Len, Cụp Nữ", href: "/collection/hat-women" },
     ],
   },
 ];

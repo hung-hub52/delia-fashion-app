@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
@@ -46,15 +47,25 @@ export default function NavDropdown({ title, items = [] }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.2 }}
-            className="absolute left-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50"
+            className="absolute left-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50"
           >
             <ul className="py-2">
               {items.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600"
                   >
+                    {/* Nếu có icon thì hiển thị */}
+                    {item.icon && (
+                      <Image
+                        src={item.icon}
+                        alt={item.name}
+                        width={18}
+                        height={18}
+                        className="object-contain"
+                      />
+                    )}
                     {item.name}
                   </Link>
                 </li>

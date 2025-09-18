@@ -50,7 +50,7 @@ export default function MegaMenu({ title, sections = [] }) {
                       {/* Danh mục cha */}
                       <Link
                         href={section.href}
-                        className="block text-sm font-bold text-gray-900 border-b-2 border-pink-500 pb-0.5 mb-2 inline-block hover:text-pink-600"
+                        className="text-sm font-bold text-gray-900 border-b-2 border-pink-500 pb-0.5 mb-2 inline-block hover:text-pink-600"
                       >
                         {section.title}
                       </Link>

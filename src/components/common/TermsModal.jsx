@@ -60,7 +60,7 @@ export default function TermsModal({ open, onClose }) {
           </p>
 
           <p className="mt-4">
-            👉 Bằng việc mua sắm trên website, nghĩa là bạn đồng ý với các điều
+            Bằng việc mua sắm trên website, nghĩa là bạn đồng ý với các điều
             khoản trên rồi đó.
           </p>
         </div>
