@@ -54,7 +54,7 @@ export default function Footer() {
             {[
               "Thanh Toán",
               "Vận Chuyển & Đồng Kiểm",
-              "Đổi Trả & Bảo Hành",
+              "Đổi Trả",
               "Bảo Mật",
               "Điều Khoản Dịch Vụ",
             ].map((item) => (
@@ -72,7 +72,7 @@ export default function Footer() {
             Số 92, Đ. QUẢNG NAM, P. NGŨ HÀNH SƠN, TP. ĐÀ NẴNG
           </p>
           <p className="text-sm text-gray-700 mt-2">
-            ĐKKD số 30041975 cấp ngày 07/10/2018 tại ĐÀ NẴNG
+            ĐKKD số 30041975 cấp ngày 30/04/2025 tại ĐÀ NẴNG
           </p>
           <p className="text-sm text-gray-700 mt-2">
             MST: 8402091945
