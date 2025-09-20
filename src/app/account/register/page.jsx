@@ -6,103 +6,193 @@ import { Eye, EyeOff } from "lucide-react";
 import { notifyUser } from "@/notify/NotifyUser";
 import TermsModal from "@/components/common/TermsModal";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 export default function RegisterPage() {
   const router = useRouter();
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [agree, setAgree] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-
   // OTP modal
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [otpExpire, setOtpExpire] = useState(0); // giây còn hiệu lực OTP
 
-  const handleRegister = (e) => {
+  // B1: Gửi yêu cầu OTP
+  const handleRegister = async (e) => {
     e.preventDefault();
 
     if (!agree) {
-      alert("Bạn cần đồng ý với điều khoản & chính sách dịch vụ");
+      notifyUser.error("⚠️ Bạn cần đồng ý với điều khoản & chính sách dịch vụ");
       return;
     }
 
-    // Sau khi validate cơ bản → hiển thị modal OTP
-    setShowOtpModal(true);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/register/request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ho_ten: fullName,
+          email,
+          password,
+          so_dien_thoai: phone,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Gửi OTP thất bại");
+
+      notifyUser.success("✅ Đã gửi OTP tới email, vui lòng kiểm tra hộp thư.");
+      setShowOtpModal(true);
+      startResendCountdown();
+      startOtpExpireCountdown(300); // 5 phút = 300 giây
+    } catch (err) {
+      notifyUser.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-const handleConfirmOtp = () => {
-  if (otp.trim() === "") {
-    notifyUser.error("⚠️ Vui lòng nhập mã xác nhận");
-    return;
-  }
+  // B2: Xác minh OTP
+  const handleConfirmOtp = async () => {
+    if (!otp.trim()) {
+      notifyUser.error("⚠️ Vui lòng nhập mã xác nhận");
+      return;
+    }
 
-  notifyUser.success("🎉 ĐÃ ĐĂNG KÝ TÀI KHOẢN THÀNH CÔNG");
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/register/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Xác minh OTP thất bại");
 
-  setShowOtpModal(false);
+      notifyUser.success("🎉 Đăng ký thành công!");
+      setShowOtpModal(false);
 
-  setTimeout(() => {
-    router.push("/account/login");
-  }, 1200);
-};  
+      localStorage.setItem("token", data.access_token);
+
+      setTimeout(() => router.push("/account/login"), 1200);
+    } catch (err) {
+      notifyUser.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gửi lại OTP
+  const handleResendOtp = async () => {
+    if (resendCountdown > 0) return;
+    try {
+      const res = await fetch(`${API}/auth/register/request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ho_ten: fullName,
+          email,
+          password,
+          so_dien_thoai: phone,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Gửi lại OTP thất bại");
+      notifyUser.success("✅ Đã gửi lại OTP.");
+      startResendCountdown();
+      startOtpExpireCountdown(300); // reset thời gian OTP mới
+    } catch (err) {
+      notifyUser.error(err.message);
+    }
+  };
+
+  // Helpers
+  const startResendCountdown = () => {
+    setResendCountdown(60);
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const startOtpExpireCountdown = (seconds) => {
+    setOtpExpire(seconds);
+    const timer = setInterval(() => {
+      setOtpExpire((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const formatTime = (s) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
   return (
     <section className="w-full bg-white px-6 py-12">
       <div className="max-w-md mx-auto text-gray-800">
-        {/* Khung xám bao quanh form */}
         <div className="bg-gray-50 p-8 rounded-lg shadow">
           <h1 className="text-2xl font-bold mb-6 text-center uppercase">
             Đăng ký
           </h1>
 
+          {/* Form đăng ký */}
           <form className="space-y-4" onSubmit={handleRegister}>
-            {/* Họ tên */}
             <div>
               <label className="block text-sm font-medium mb-1">Họ tên *</label>
               <input
                 type="text"
-                placeholder="Nhập họ tên"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 className="w-full border px-4 py-2 rounded focus:outline-none focus:border-pink-500"
                 required
               />
             </div>
-
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium mb-1">Email *</label>
               <input
                 type="email"
-                placeholder="Nhập email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full border px-4 py-2 rounded focus:outline-none focus:border-pink-500"
                 required
               />
             </div>
-
-            {/* Số điện thoại */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Số điện thoại *
               </label>
               <input
                 type="tel"
-                placeholder="Nhập số điện thoại"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full border px-4 py-2 rounded focus:outline-none focus:border-pink-500"
                 required
               />
             </div>
-
-            {/* Mật khẩu */}
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Mật khẩu *
-              </label>
+              <label className="block text-sm font-medium mb-1">Mật khẩu *</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Tạo mật khẩu"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full border px-4 py-2 rounded focus:outline-none focus:border-pink-500 pr-10"
                   required
                 />
@@ -115,8 +205,6 @@ const handleConfirmOtp = () => {
                 </button>
               </div>
             </div>
-
-            {/* Checkbox đồng ý */}
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -136,13 +224,12 @@ const handleConfirmOtp = () => {
                 </button>
               </label>
             </div>
-
-            {/* Button */}
             <button
               type="submit"
-              className="w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-500 transition"
+              disabled={loading}
+              className="w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-500 transition disabled:opacity-70"
             >
-              Đăng ký
+              {loading ? "Đang xử lý..." : "Đăng ký"}
             </button>
           </form>
 
@@ -158,9 +245,15 @@ const handleConfirmOtp = () => {
         {showOtpModal && (
           <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-white/30 z-50 text-gray-800">
             <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-              <h2 className="text-xl font-bold mb-4 text-center">
-                Nhập mã xác nhận
-              </h2>
+              <h2 className="text-xl font-bold mb-2 text-center">Nhập mã xác nhận</h2>
+              {otpExpire > 0 && (
+                <p className="text-sm text-center text-gray-600 mb-3">
+                  OTP còn hiệu lực trong{" "}
+                  <span className="font-semibold text-pink-600">
+                    {formatTime(otpExpire)}
+                  </span>
+                </p>
+              )}
               <input
                 type="text"
                 placeholder="Nhập mã OTP"
@@ -170,9 +263,19 @@ const handleConfirmOtp = () => {
               />
               <button
                 onClick={handleConfirmOtp}
-                className="w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-500 transition"
+                disabled={loading}
+                className="w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-500 transition disabled:opacity-70"
               >
-                Xác nhận
+                {loading ? "Đang xác minh..." : "Xác nhận"}
+              </button>
+              <button
+                onClick={handleResendOtp}
+                disabled={resendCountdown > 0}
+                className="w-full mt-2 text-gray-600 hover:text-pink-600 text-sm disabled:opacity-50"
+              >
+                {resendCountdown > 0
+                  ? `Gửi lại OTP sau ${resendCountdown}s`
+                  : "Gửi lại OTP"}
               </button>
               <button
                 onClick={() => setShowOtpModal(false)}
@@ -184,9 +287,7 @@ const handleConfirmOtp = () => {
           </div>
         )}
 
-        {/* Modal điều khoản */}
         <TermsModal open={showTerms} onClose={() => setShowTerms(false)} />
-          
       </div>
     </section>
   );

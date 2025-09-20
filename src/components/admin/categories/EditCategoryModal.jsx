@@ -60,15 +60,7 @@ export default function EditCategoryModal({ open, onClose, item, onSave }) {
               className="w-full rounded border px-3 py-2 outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
-          <div>
-            <label className="mb-1 block font-medium">Ghi chú</label>
-            <textarea
-              value={form.note}
-              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-              className="h-24 w-full resize-none rounded border px-3 py-2 outline-none focus:ring-2 focus:ring-violet-400"
-            />
-          </div>
-
+          
           <div className="mt-2 flex justify-end gap-2">
             <button
               type="button"

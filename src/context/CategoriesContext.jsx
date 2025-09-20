@@ -1,5 +1,3 @@
-//src/context/CategoriesContext.jsx dùng chung của danh mục, sản phẩm
-
 "use client";
 import { createContext, useContext } from "react";
 import useCategories from "@/hooks/useCategories";
@@ -7,14 +5,9 @@ import useCategories from "@/hooks/useCategories";
 const CategoriesContext = createContext(null);
 
 export function CategoriesProvider({ children }) {
-  const categoriesStore = useCategories([
-    { id: 1, name: "Giày nữ", parentName: "Thời trang nữ" },
-    { id: 2, name: "Túi xách nữ", parentName: "Phụ kiện" },
-    { id: 3, name: "Áo sơ mi", parentName: "Thời trang nam" },
-  ]);
-
+  const store = useCategories(); // dữ liệu thật từ API + displayName đã xử lý
   return (
-    <CategoriesContext.Provider value={categoriesStore}>
+    <CategoriesContext.Provider value={store}>
       {children}
     </CategoriesContext.Provider>
   );
@@ -22,9 +15,8 @@ export function CategoriesProvider({ children }) {
 
 export function useCategoriesContext() {
   const ctx = useContext(CategoriesContext);
-  if (!ctx)
-    throw new Error(
-      "useCategoriesContext must be used inside CategoriesProvider"
-    );
+  if (!ctx) {
+    throw new Error("useCategoriesContext must be used inside CategoriesProvider");
+  }
   return ctx;
 }
