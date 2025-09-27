@@ -25,9 +25,8 @@ export default function BannerSection() {
           disableOnInteraction: false,
         }}
         pagination={{ clickable: true }}
-        navigation
-        modules={[Autoplay, Pagination, Navigation]}
-        className="w-full"
+        loop
+        modules={[Autoplay, Pagination]}
       >
         {banners.map((src, i) => (
           <SwiperSlide key={i}>

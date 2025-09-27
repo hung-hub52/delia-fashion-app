@@ -5,8 +5,7 @@ import Link from "next/link";
 import { User, ShoppingCart, Home } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import NavDropdown from "@/components/common/NavDropdown";
-import MegaMenu from "@/components/common/MegaMenu";
+import NavItem from "@/components/common/NavItem"; // ✅ component mới gộp
 
 // Import menu data
 import { nuItems, namItems, collectionSections } from "@/data/menus";
@@ -69,19 +68,23 @@ export default function Header() {
               </Link>
             </li>
 
-            {/* Dropdown Nữ */}
+            {/* Menu Nữ */}
             <li>
-              <NavDropdown title="Nữ" items={nuItems} />
+              <NavItem title="Nữ" href="/users/women" items={nuItems} />
             </li>
 
-            {/* Dropdown Nam */}
+            {/* Menu Nam */}
             <li>
-              <NavDropdown title="Nam" items={namItems} />
+              <NavItem title="Nam" href="/users/men" items={namItems} />
             </li>
 
-            {/* Mega menu Bộ sưu tập */}
+            {/* Bộ sưu tập */}
             <li>
-              <MegaMenu title="Bộ sưu tập" sections={collectionSections} />
+              <NavItem
+                title="Bộ sưu tập"
+                href="/users/collection"
+                sections={collectionSections}
+              />
             </li>
 
             {/* Tin tức */}
@@ -98,16 +101,19 @@ export default function Header() {
               </Link>
             </li>
 
-            <Link
-              href="/users/about"
-              className={`px-2 transition-colors ${
-                pathname.startsWith("/users/about")
-                  ? "text-pink-600 border-b-2 border-pink-600 pb-1"
-                  : "text-gray-800 hover:text-pink-600"
-              } text-sm md:text-base font-medium tracking-wide uppercase`}
-            >
-              Giới Thiệu
-            </Link>
+            {/* Giới thiệu */}
+            <li>
+              <Link
+                href="/users/about"
+                className={`px-2 transition-colors ${
+                  pathname.startsWith("/users/about")
+                    ? "text-pink-600 border-b-2 border-pink-600 pb-1"
+                    : "text-gray-800 hover:text-pink-600"
+                } text-sm md:text-base font-medium tracking-wide uppercase`}
+              >
+                Giới Thiệu
+              </Link>
+            </li>
           </ul>
 
           {/* Search + User + Cart */}
