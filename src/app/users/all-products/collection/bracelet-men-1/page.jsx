@@ -7,6 +7,6 @@ export default function Page() {
   products = products.filter(p => p.key === "bracelet-men-1");
 
   return (
-    <ProductsPage slug="bracelet-men-1" title="Vòng Tay Trầm Hương" products={products} />
+    <ProductsPage slug="bracelet-men-1" title="Vòng Tay Trầm Nam" products={products} />
   );
 }

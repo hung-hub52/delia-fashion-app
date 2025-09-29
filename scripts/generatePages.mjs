@@ -80,7 +80,6 @@ export default function Page() {
   validateProducts(slug, collectionProducts[categoryKey], null);
 }
 
-// ✅ Trang con (lọc theo gender + title)
 // ✅ Trang con (lọc theo slug = key)
 function createCollectionChildPage(href, title, categoryKey) {
   const slug = getSlug(href);
@@ -109,7 +108,6 @@ export default function Page() {
   validateProducts(slug, products, null);
 }
 
-
 // ✅ Redirect page
 function createRedirectPage(gender, href, targetSlug) {
   const slug = getSlug(href);
@@ -126,6 +124,32 @@ export default function Page() {
 
   fs.writeFileSync(path.join(dir, "page.jsx"), code, "utf-8");
   console.log("➡️ Created redirect:", gender, slug, "->", targetSlug);
+}
+
+// ✅ Trang tổng hợp cho men / women
+function createGenderPage(gender) {
+  const dir = path.join(BASE, gender);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const code = `import ProductsPage from "@/components/users/ProductsPage";
+import { collectionProducts } from "@/data/collections";
+
+export default function Page() {
+  let products = [];
+  Object.values(collectionProducts).forEach(list => {
+    products = products.concat(list.filter(p => p.gender.includes("${gender}")));
+  });
+
+  return (
+    <ProductsPage slug="${gender}" title="Sản phẩm ${
+    gender === "men" ? "Nam" : "Nữ"
+  }" products={products} />
+  );
+}
+`;
+
+  fs.writeFileSync(path.join(dir, "page.jsx"), code, "utf-8");
+  console.log("✅ Created gender page:", gender);
 }
 
 // ---- Generate ----
@@ -151,3 +175,7 @@ nuItems.forEach((item) => {
   const targetSlug = getSlug(item.href);
   createRedirectPage("women", item.href, targetSlug);
 });
+
+// ---- Generate gender pages ----
+createGenderPage("men");
+createGenderPage("women");

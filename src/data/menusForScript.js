@@ -10,7 +10,7 @@ export const nuItems = [
     href: "/users/all-products/women/glasses-women",
   },
   { name: "Thắt Lưng Dây Nữ", href: "/users/all-products/women/belt-women" },
-  { name: "Đồng Hồ Bulova Nữ", href: "/users/all-products/women/watch-women" },
+  { name: "Đồng Hồ OLEVS Nữ", href: "/users/all-products/women/watch-women" },
   {
     name: "Dây Chuyền Vàng Nữ",
     href: "/users/all-products/women/necklace-women-2",
@@ -32,7 +32,7 @@ export const namItems = [
   { name: "Ví Da Cao Cấp Nam", href: "/users/all-products/men/wallet-men" },
   { name: "Balo Laptop Nam", href: "/users/all-products/men/balo-men" },
   { name: "Kính Nửa Gọng Nam", href: "/users/all-products/men/glasses-men" },
-  { name: "Thắt Lưng Pedro Nam", href: "/users/all-products/men/belt-men" },
+  { name: "Thắt Lưng Vải Dù Nam", href: "/users/all-products/men/belt-men" },
   { name: "Đồng Hồ G-Shock Nam", href: "/users/all-products/men/watch-men" },
   { name: "Dây Chuyền Bạc Nam", href: "/users/all-products/men/necklace-men" },
   {
@@ -103,7 +103,7 @@ export const collectionSections = [
     href: "/users/all-products/collection/belt",
     items: [
       {
-        name: "Thắt Lưng Pedro Nam",
+        name: "Thắt Lưng Vải Dù Nam",
         href: "/users/all-products/collection/belt-men",
       },
       {
@@ -121,7 +121,7 @@ export const collectionSections = [
         href: "/users/all-products/collection/watch-men",
       },
       {
-        name: "Đồng Hồ Bulova Nữ",
+        name: "Đồng Hồ OLEVS Nữ",
         href: "/users/all-products/collection/watch-women",
       },
     ],
