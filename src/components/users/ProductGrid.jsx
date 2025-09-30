@@ -1,3 +1,5 @@
+// src/components/users/ProductGrid.jsx khung sản phẩm
+
 "use client";
 import ProductCard from "./ProductCard";
 

@@ -3,10 +3,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
-export default function NavItem({ title, href, items = [], sections = [] }) {
+export default function NavItem({
+  title,
+  href,
+  icon: Icon,
+  items = [],
+  sections = [],
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const pathname = usePathname();
 
   // Đóng khi click ra ngoài
   useEffect(() => {
@@ -21,6 +29,9 @@ export default function NavItem({ title, href, items = [], sections = [] }) {
 
   const hasDropdown = items.length > 0 || sections.length > 0;
 
+  // Kiểm tra active route
+  const isActive = href && pathname.startsWith(href);
+
   return (
     <div
       ref={ref}
@@ -33,25 +44,27 @@ export default function NavItem({ title, href, items = [], sections = [] }) {
         {href ? (
           <Link
             href={href}
-            className={`uppercase font-medium px-2 py-1 ${
-              open
+            className={`flex items-center gap-1 uppercase font-medium px-2 py-1 transition-colors ${
+              isActive || open
                 ? "text-pink-600 border-b-2 border-pink-600"
                 : "text-gray-800 hover:text-pink-600"
             }`}
           >
-            {title}
+            {Icon && <Icon size={18} className="mb-0.5" />}
+            <span>{title}</span>
           </Link>
         ) : (
           <button
             type="button"
             onClick={() => setOpen(!open)}
-            className={`uppercase font-medium px-2 py-1 ${
-              open
+            className={`flex items-center gap-1 uppercase font-medium px-2 py-1 transition-colors ${
+              isActive || open
                 ? "text-pink-600 border-b-2 border-pink-600"
                 : "text-gray-800 hover:text-pink-600"
             }`}
           >
-            {title}
+            {Icon && <Icon size={18} className="mb-0.5" />}
+            <span>{title}</span>
           </button>
         )}
       </div>
@@ -104,7 +117,7 @@ export default function NavItem({ title, href, items = [], sections = [] }) {
             <div className="max-w-7xl mx-auto grid grid-cols-5 gap-x-10 gap-y-10 px-10 py-6">
               {sections.map((section, idx) => (
                 <div key={idx} className="px-2">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-start">
                     {section.icon && (
                       <section.icon className="w-5 h-5 text-gray-700 mt-1" />
                     )}

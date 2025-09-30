@@ -1,14 +1,20 @@
+// src/components/users/ProductCard.jsx khung sản phẩm
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import { calculateDiscount } from "@/utils/price";
 
 export default function ProductCard({ product }) {
+  // Tính % giảm tự động
+  const discountPercent = calculateDiscount(product.oldPrice, product.price);
+  const hasDiscount = discountPercent > 0;
+
   return (
     <div className="bg-white border border-gray-200 hover:border-gray-300 rounded-lg shadow-sm hover:shadow-md transition relative flex flex-col">
       {/* Badge giảm giá */}
-      {product.discount > 0 && (
-        <span className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
-          -{product.discount}%
+      {hasDiscount && (
+        <span className="absolute top-2 left-2 z-10 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+          -{discountPercent}%
         </span>
       )}
 
@@ -26,14 +32,20 @@ export default function ProductCard({ product }) {
 
       {/* Nội dung */}
       <div className="p-3 flex flex-col flex-1">
-        {/* Tên sản phẩm */}
-        <h3 className="text-gray-800 text-sm font-medium line-clamp-2 min-h-[40px] mb-2">
+        <h3 className="text-gray-800 text-sm font-medium line-clamp-2 min-h-[40px] mb-1">
           {product.name}
         </h3>
 
+        {/* Lượt bán */}
+        {product.sold !== undefined && (
+          <p className="text-xs text-gray-500 mb-1">
+            Đã bán: <span className="font-medium">{product.sold}</span> lượt
+          </p>
+        )}
+
         {/* Giá */}
         <div className="flex items-center gap-2">
-          {product.oldPrice > 0 && (
+          {hasDiscount && (
             <span className="text-gray-400 text-sm line-through">
               {product.oldPrice.toLocaleString()}₫
             </span>
