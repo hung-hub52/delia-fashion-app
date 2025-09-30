@@ -44,57 +44,55 @@ export default function CategoriesPage() {
 
 
   // handler thêm từ modal
-  const handleAddFromModal = async (payload) => {
-    try {
-      if (payload.mode === "create-child") {
-        const { parentId, subCategoryName } = payload;
-        if (existsSameLevel(subCategoryName, parentId)) {
-          notify.warn("Tên danh mục con đã tồn tại trong cấp này.");
-          return;
-        }
-        await addCategory({
-          ten_danh_muc: subCategoryName.trim(),
-          parent_id: parentId,
-        });
-        notify.success("Đã thêm danh mục con");
+  const normalize = (s = "") =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
+const existsSameLevel = (name, parentId) => {
+  const key = normalize(name);
+  return categories.some((c) => c.parentId === parentId && normalize(c.name) === key);
+};
+
+const handleAddFromModal = async (payload) => {
+  try {
+    if (payload.mode === "create-child") {
+      const { parentId, subCategoryName } = payload;
+      if (existsSameLevel(subCategoryName, parentId)) {
+        notify.warn("Tên danh mục con đã tồn tại trong cấp này.");
         return;
       }
-
-      if (payload.mode === "create-root-and-child") {
-        const { newRootCategoryName, subCategoryName } = payload;
-
-        let parentId = 0;
-        const existedRoot = categories.find(
-          (c) =>
-            c.parentId === 0 &&
-            normalize(c.name) === normalize(newRootCategoryName)
-        );
-
-        if (existedRoot) {
-          parentId = existedRoot.id;
-        } else {
-          const createdRoot = await addCategory({
-            ten_danh_muc: newRootCategoryName.trim(),
-            parent_id: 0,
-          });
-          parentId = createdRoot?.id_danh_muc ?? createdRoot?.id ?? 0;
-        }
-
-        if (existsSameLevel(subCategoryName, parentId)) {
-          notify.warn("Tên danh mục con đã tồn tại trong cấp này.");
-          return;
-        }
-
-        await addCategory({
-          ten_danh_muc: subCategoryName.trim(),
-          parent_id: parentId,
-        });
-        notify.success("Đã tạo gốc & thêm danh mục con");
-      }
-    } catch (e) {
-      notify.error(e.message || "Không thêm được danh mục");
+      await addCategory({ ten_danh_muc: subCategoryName.trim(), parent_id: parentId });
+      notify.success("Đã thêm danh mục con");
+      return;
     }
-  };
+
+    if (payload.mode === "create-root-and-child") {
+      const { newRootCategoryName, subCategoryName } = payload;
+
+      // tạo/tìm gốc
+      let parentId = 0;
+      const existedRoot = categories.find(
+        (c) => c.parentId === 0 && normalize(c.name) === normalize(newRootCategoryName)
+      );
+      if (existedRoot) {
+        parentId = existedRoot.id;
+      } else {
+        const createdRoot = await addCategory({ ten_danh_muc: newRootCategoryName.trim(), parent_id: 0 });
+        parentId = createdRoot?.id_danh_muc ?? createdRoot?.id ?? 0;
+      }
+
+      // thêm con
+      if (existsSameLevel(subCategoryName, parentId)) {
+        notify.warn("Tên danh mục con đã tồn tại trong cấp này.");
+        return;
+      }
+      await addCategory({ ten_danh_muc: subCategoryName.trim(), parent_id: parentId });
+      notify.success("Đã tạo gốc & thêm danh mục con");
+    }
+  } catch (e) {
+    notify.error(e.message || "Không thêm được danh mục");
+  }
+};
+
 
   const handleDeleteOne = async (id) => {
     await deleteCategory(id);

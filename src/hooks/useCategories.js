@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useEffect, useMemo } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 // Bỏ dấu + chuẩn hoá khoảng trắng, lower-case
 const normalize = (s = "") =>

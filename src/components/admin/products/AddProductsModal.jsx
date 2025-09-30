@@ -84,9 +84,24 @@ export default function AddProductsModal({ open, onClose, onSave }) {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+    try {
+      const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
+      const fd = new FormData();
+      fd.append("file", file);
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`${API}/products/upload-image`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.image_url) throw new Error(data?.message || "Upload ảnh thất bại");
+      setFormData((prev) => ({ ...prev, image: data.image_url }));
+    } catch {
+      // fallback preview local
       setFormData((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
     }
   };

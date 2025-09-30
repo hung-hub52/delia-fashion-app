@@ -1,8 +1,13 @@
-// src/components/admin/sales/ConfirmDisableModal.jsx
 "use client";
 
 import { X, AlertTriangle } from "lucide-react";
 
+/**
+ * Props:
+ * - open: boolean
+ * - onClose: () => void
+ * - onConfirm: () => void
+ */
 export default function ConfirmDisableModal({ open, onClose, onConfirm }) {
   if (!open) return null;
 
@@ -18,26 +23,29 @@ export default function ConfirmDisableModal({ open, onClose, onConfirm }) {
             onClick={onClose}
             className="rounded-full p-1 hover:bg-gray-100"
             title="Đóng"
+            type="button"
           >
             <X size={18} />
           </button>
         </div>
 
         <div className="px-4 py-4 text-sm text-gray-700">
-          Mã sẽ chuyển sang trạng thái <b>Đã vô hiệu hóa</b> và không thể áp
-          dụng cho đơn hàng mới. Bạn có chắc muốn tiếp tục?
+          Mã sẽ chuyển sang trạng thái <b>Đã vô hiệu hóa</b> và không thể áp dụng
+          cho đơn hàng mới. Bạn có chắc muốn tiếp tục?
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
           <button
             onClick={onClose}
             className="rounded-md border px-3 py-2 text-gray-700 hover:bg-gray-50"
+            type="button"
           >
             Hủy
           </button>
           <button
             onClick={onConfirm}
             className="rounded-md bg-red-600 px-3 py-2 text-white hover:bg-red-700"
+            type="button"
           >
             Vô hiệu hóa
           </button>

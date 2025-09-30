@@ -1,57 +1,49 @@
-// src/components/admin/sales/AddSaleModal.jsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { X, Percent } from "lucide-react";
 
+/**
+ * Props:
+ * - open: boolean
+ * - onClose: () => void
+ * - onAdd: ({ code, description, endDate, quantity }) => Promise|void
+ */
 export default function AddSaleModal({ open, onClose, onAdd }) {
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
-  const [minOrder, setMinOrder] = useState("");
-  const [usageLimit, setUsageLimit] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [status, setStatus] = useState("Đang hoạt động");
+  const [quantity, setQuantity] = useState("");    // số lượng áp dụng (tồn)
+  const [endDate, setEndDate] = useState("");      // YYYY-MM-DD
 
   useEffect(() => {
     if (open) {
       setCode("");
       setDescription("");
-      setMinOrder("");
-      setUsageLimit("");
-      setStartDate("");
+      setQuantity("");
       setEndDate("");
-      setStatus("Đang hoạt động");
     }
   }, [open]);
 
   const valid = useMemo(() => {
     if (!code.trim() || !description.trim()) return false;
-    if (!startDate || !endDate) return false;
-    if (new Date(startDate) > new Date(endDate)) return false;
+    if (!endDate) return false;
+    // endDate phải là ngày hợp lệ trong tương lai/hiện tại
+    const d = new Date(endDate);
+    if (Number.isNaN(d.getTime())) return false;
+    // quantity >= 0
+    if (String(quantity).length && Number(quantity) < 0) return false;
     return true;
-  }, [code, description, startDate, endDate]);
+  }, [code, description, endDate, quantity]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!valid) return;
 
-    // 🔥 Tự động xét trạng thái theo ngày kết thúc
-    const today = new Date();
-    const end = new Date(endDate);
-    let finalStatus = status;
-    if (end < today) {
-      finalStatus = "Hết hạn";
-    }
-
-    onAdd?.({
+    await onAdd?.({
       code: code.trim().toUpperCase(),
       description: description.trim(),
-      status: finalStatus,
-      startDate,
       endDate,
-      minOrder: Number(minOrder || 0),
-      usageLimit: Number(usageLimit || 0),
+      quantity: Number(quantity || 0),
     });
   };
 
@@ -94,17 +86,17 @@ export default function AddSaleModal({ open, onClose, onAdd }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Trạng thái</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+            <label className="mb-1 block text-sm font-medium">
+              Số lượng (tồn)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              placeholder="0 = không giới hạn"
               className="w-full rounded-md border px-3 py-2"
-            >
-              <option>Đang hoạt động</option>
-              <option>Sắp diễn ra</option>
-              <option>Hết hạn</option>
-              <option>Đã vô hiệu hóa</option>
-            </select>
+            />
           </div>
 
           <div className="sm:col-span-2">
@@ -118,35 +110,7 @@ export default function AddSaleModal({ open, onClose, onAdd }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">
-              Giới hạn số lượng
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={usageLimit}
-              onChange={(e) => setUsageLimit(e.target.value)}
-              placeholder="0 = không giới hạn"
-              className="w-full rounded-md border px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Ngày bắt đầu
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-md border px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Ngày kết thúc
-            </label>
+            <label className="mb-1 block text-sm font-medium">Ngày kết thúc</label>
             <input
               type="date"
               value={endDate}
@@ -161,6 +125,7 @@ export default function AddSaleModal({ open, onClose, onAdd }) {
               <b>Xem trước:</b>{" "}
               <span className="font-semibold">{code || "SALECODE"}</span> —{" "}
               <span>{description || "Mô tả khuyến mãi"}</span>
+              {endDate ? ` (Kết thúc: ${endDate})` : ""}
             </div>
           </div>
         </div>

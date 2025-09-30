@@ -5,6 +5,28 @@ import { useEffect, useState } from "react";
 import { X, Eye, EyeOff, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
+
+function getToken() {
+  if (typeof window === "undefined") return null;
+  const keys = ["token","access_token","jwt","authToken","Authorization","authorization","user","auth","session"];
+  for (const k of keys) {
+    let v = localStorage.getItem(k);
+    if (!v) continue;
+    try {
+      const obj = JSON.parse(v);
+      for (const kk of ["access_token","token","jwt","value"]) {
+        const cand = obj?.[kk];
+        if (typeof cand === "string" && cand.split(".").length === 3) return cand;
+      }
+    } catch {}
+    v = String(v).replace(/^"(.*)"$/, "$1").trim();
+    if (v.startsWith("Bearer ")) v = v.slice(7).trim();
+    if (v.split(".").length === 3) return v;
+  }
+  return null;
+}
+
 export default function ChangePasswordModal({
   open,
   onClose,
@@ -27,9 +49,7 @@ export default function ChangePasswordModal({
   const genCaptcha = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let out = "";
-    for (let i = 0; i < 5; i++) {
-      out += chars[Math.floor(Math.random() * chars.length)];
-    }
+    for (let i = 0; i < 5; i++) out += chars[Math.floor(Math.random() * chars.length)];
     return out;
   };
 
@@ -55,6 +75,21 @@ export default function ChangePasswordModal({
     setCaptchaInput("");
   };
 
+  // gọi API đổi mật khẩu (/auth/change-password)
+  const callChangePasswordAPI = async (currentPassword, newPassword) => {
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken() || ""}`,
+    };
+    const res = await fetch(`${API}/auth/change-password`, {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }).catch(()=> null);
+    return !!res?.ok;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -71,10 +106,6 @@ export default function ChangePasswordModal({
       setError("Mật khẩu xác nhận không khớp!");
       return;
     }
-    if (current !== user.password) {
-      setError("Mật khẩu hiện tại không đúng!");
-      return;
-    }
     if (captchaInput.trim().toUpperCase() !== captcha.toUpperCase()) {
       setError("Mã xác thực không chính xác!");
       handleRefreshCaptcha();
@@ -83,11 +114,17 @@ export default function ChangePasswordModal({
 
     setLoading(true);
     try {
-      await new Promise((res) => setTimeout(res, 1200));
-      onChangePassword?.(newPass);
+      const ok = await callChangePasswordAPI(current, newPass);
+      if (!ok) {
+        setError("Đổi mật khẩu thất bại!");
+        toast.error("Đổi mật khẩu thất bại!");
+        setLoading(false);
+        return;
+      }
+      onChangePassword?.(newPass); // cập nhật UI nếu cha muốn
       onClose?.();
       toast.success("Đổi mật khẩu thành công!");
-    } catch (e) {
+    } catch {
       setError("Đổi mật khẩu thất bại!");
       toast.error("Đổi mật khẩu thất bại!");
     } finally {
@@ -99,7 +136,6 @@ export default function ChangePasswordModal({
     <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center">
       <form
         onSubmit={handleSubmit}
-        // ✅ Khung luôn sáng
         className="bg-gray-50 p-6 rounded-2xl shadow-2xl min-w-[340px] max-w-[95vw] relative border border-violet-200"
       >
         <button
@@ -175,21 +211,14 @@ export default function ChangePasswordModal({
             </div>
           </div>
 
-          {/* ✅ Captcha nhỏ gọn với noise */}
+          {/* Captcha */}
           <div className="flex items-center gap-3">
-            <div
-              className="relative h-10 min-w-[100px] px-2 flex items-center justify-center rounded-md font-mono text-base tracking-[0.3em] select-none
-                            bg-gray-100 border border-violet-300 text-violet-700 shadow-inner overflow-hidden"
-            >
-              {/* noise lines */}
+            <div className="relative h-10 min-w-[100px] px-2 flex items-center justify-center rounded-md font-mono text-base tracking-[0.3em] select-none bg-gray-100 border border-violet-300 text-violet-700 shadow-inner overflow-hidden">
               {[...Array(4)].map((_, i) => (
                 <div
                   key={i}
                   className="absolute w-full h-[1px] bg-gray-400/30"
-                  style={{
-                    top: `${Math.random() * 100}%`,
-                    transform: `rotate(${Math.random() * 60 - 30}deg)`,
-                  }}
+                  style={{ top: `${Math.random() * 100}%`, transform: `rotate(${Math.random() * 60 - 30}deg)` }}
                 />
               ))}
               {captcha}

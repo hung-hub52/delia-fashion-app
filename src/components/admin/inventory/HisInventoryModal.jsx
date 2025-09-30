@@ -2,7 +2,7 @@
 "use client";
 import { X } from "lucide-react";
 
-export default function HisInventoryModal({ open, onClose, history }) {
+export default function HisInventoryModal({ open, onClose, history, title = "📜 Lịch sử nhập kho" }) {
   if (!open) return null;
 
   return (
@@ -10,7 +10,7 @@ export default function HisInventoryModal({ open, onClose, history }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 text-gray-800">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold">📜 Lịch sử nhập kho</h2>
+          <h2 className="text-lg font-bold">{title}</h2>
           <button
             onClick={onClose}
             className="rounded-full bg-red-500 text-white px-3 py-1 hover:bg-red-600"

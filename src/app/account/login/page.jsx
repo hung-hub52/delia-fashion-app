@@ -4,39 +4,36 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
+const API = "http://localhost:3001/api";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch("http://localhost:3001/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+  async function handleLogin(e) {
+  e.preventDefault();
 
-      const data = await res.json();
+  const res = await fetch('http://localhost:3001/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
 
-      if (res.ok) {
-        localStorage.setItem("token", data.access_token);
-        // Điều hướng theo role/email
-        if (data.user?.vai_tro === "admin") {
-          router.push("/admin");
-        } else {
-          router.push("/");
-        }
-      } else {
-        alert(data.message || "Đăng nhập thất bại");
-      }
-    } catch (error) {
-      console.error("Lỗi đăng nhập:", error);
-      alert("Không kết nối được server");
-    }
-  };
+  const data = await res.json();
+  if (!res.ok) {
+    alert(data?.message || 'Đăng nhập thất bại');
+    return;
+  }
+
+  // ✅ LƯU TOKEN & (tuỳ chọn) USER
+  localStorage.setItem('token', data.access_token);
+  localStorage.setItem('user', JSON.stringify(data.user || {}));
+
+  // điều hướng
+  router.push('/admin');
+}
 
   return (
     <section className="w-full bg-white px-6 py-12">

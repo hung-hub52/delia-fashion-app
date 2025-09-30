@@ -5,7 +5,30 @@ import AdminAuthModal from "@/components/admin/customers/AdminAuthModal";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import toast from "react-hot-toast";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
+
+function looksLikeJwt(s) {
+  return typeof s === "string" && s.split(".").length === 3;
+}
+function getToken() {
+  if (typeof window === "undefined") return null;
+  const keys = ["token", "access_token", "jwt", "Authorization", "authorization", "auth", "session"];
+  for (const k of keys) {
+    let v = localStorage.getItem(k);
+    if (!v) continue;
+    try {
+      const obj = JSON.parse(v);
+      for (const kk of ["access_token", "token", "jwt", "value"]) {
+        const cand = obj?.[kk];
+        if (typeof cand === "string" && looksLikeJwt(cand)) return cand;
+      }
+    } catch {}
+    v = String(v).replace(/^"(.*)"$/, "$1").trim();
+    if (v.startsWith("Bearer ")) v = v.slice(7).trim();
+    if (looksLikeJwt(v)) return v;
+  }
+  return null;
+}
 
 export default function CustomerListPage() {
   const [customers, setCustomers] = useState([]);
@@ -13,18 +36,18 @@ export default function CustomerListPage() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
 
-  // confirm modal
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmAction, setConfirmAction] = useState(() => async () => {});
   const [confirmSuccessMsg, setConfirmSuccessMsg] = useState("Thao tác thành công");
 
   useEffect(() => {
-    const fetchCustomers = async () => {
+    (async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = getToken();
         const res = await fetch(`${API}/users/customers`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: "include",
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Không lấy được khách hàng");
@@ -43,11 +66,9 @@ export default function CustomerListPage() {
       } catch (err) {
         toast.error(err.message);
       }
-    };
-    fetchCustomers();
+    })();
   }, []);
 
-  // mask helpers
   const maskPhone = (phone) =>
     !phone ? "" : phone.slice(0, -3).replace(/./g, "*") + phone.slice(-3);
   const maskEmail = (email) => {
@@ -57,12 +78,11 @@ export default function CustomerListPage() {
   };
   const maskAddress = (address) => (!address ? "" : "*".repeat(address.length));
 
-  // API helpers
   const lockUser = async (id) => {
     const token = localStorage.getItem("token");
     const res = await fetch(`${API}/users/${id}/lock`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Khóa tài khoản thất bại");
@@ -73,14 +93,13 @@ export default function CustomerListPage() {
     const token = localStorage.getItem("token");
     const res = await fetch(`${API}/users/${id}/unlock`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Mở khóa tài khoản thất bại");
     return data;
   };
 
-  // state update after actions
   const onLock = async (id) => {
     await lockUser(id);
     setCustomers((prev) =>
@@ -95,10 +114,9 @@ export default function CustomerListPage() {
     );
   };
 
-  // open confirm
   const askConfirm = (message, action, successMsg) => {
     setConfirmMessage(message);
-    setConfirmAction(() => action);            // action phải là async
+    setConfirmAction(() => action);
     setConfirmSuccessMsg(successMsg || "Thao tác thành công");
     setConfirmOpen(true);
   };
@@ -153,7 +171,7 @@ export default function CustomerListPage() {
                     className="text-blue-600 hover:underline font-medium"
                     onClick={() => {
                       setSelectedCustomer(c);
-                      setShowAuth(true);
+                      setShowAuth(true); // xác thực ở modal
                     }}
                   >
                     Xem
@@ -193,7 +211,6 @@ export default function CustomerListPage() {
         </table>
       </div>
 
-      {/* Modal chi tiết KH */}
       {showDetail && selectedCustomer && (
         <CustomerDetailModal
           customer={selectedCustomer}
@@ -201,14 +218,12 @@ export default function CustomerListPage() {
         />
       )}
 
-      {/* Modal xác thực admin — đặt ngoài map để không render nhiều lần */}
       <AdminAuthModal
         open={showAuth}
         onClose={() => setShowAuth(false)}
         onSuccess={() => setShowDetail(true)}
       />
 
-      {/* Modal xác nhận */}
       <ConfirmModal
         open={confirmOpen}
         message={confirmMessage}

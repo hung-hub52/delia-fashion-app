@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Eye, Trash2 } from "lucide-react";
+import AdminAuthModal from "@/components/admin/customers/AdminAuthModal";
 import NotifyToast from "@/notify/ui/NotifyToast";
 import AddProductsModal from "@/components/admin/products/AddProductsModal";
 import ViewProductsModal from "@/components/admin/products/ViewProductsModal";
@@ -10,51 +11,94 @@ import { toast } from "react-hot-toast";
 import { useInventory } from "@/context/InventoryContext";
 
 export default function ProductsPage() {
-  const { seedFromProducts, removeFromInventory, sellProduct } =
-    useInventory() || {};
+  const {
+    seedFromProducts,
+    removeFromInventory,
+    sellProduct,
+    addToInventory, // ✅ dùng để khởi tạo kho ngay khi thêm SP
+  } = useInventory() || {};
 
-  // DỮ LIỆU MẪU (có stock luôn)
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      name: "Mũ nam QC",
-      sku: "SP001",
-      parentCategory: "Mũ",
-      category: "Mũ lưỡi trai",
-      retailPrice: 150000,
-      importPrice: 100000,
-      description: "Mũ thời trang nam QC",
-      image: "",
-      initWarehouse: true,
-      stock: 100,
-      unit: "Cái",
-      branch: "Kho mặc định",
-    },
-    {
-      id: 2,
-      name: "Túi xách nữ",
-      sku: "SP002",
-      parentCategory: "Phụ kiện",
-      category: "Túi thời trang",
-      retailPrice: 300000,
-      importPrice: 200000,
-      description: "Túi xách nữ cao cấp",
-      image: "",
-      initWarehouse: true,
-      stock: 50,
-      unit: "Cái",
-      branch: "Kho mặc định",
-    },
-  ]);
+  // ==== BE CONFIG (hardcode như yêu cầu) ====
+  const API = "http://localhost:3001/api";
 
-  // Seed sang kho
-  useEffect(() => {
-    if (typeof seedFromProducts === "function") {
-      seedFromProducts(products);
+  // ====== AUTH: tìm & chuẩn hoá token ở mọi định dạng ======
+  const looksLikeJWT = (s) => typeof s === "string" && s.split(".").length === 3;
+
+  const getAccessToken = () => {
+    if (typeof window === "undefined") return null;
+
+    // 1) Thử các key phổ biến
+    const commonKeys = [
+      "token",
+      "access_token",
+      "jwt",
+      "authToken",
+      "Authorization",
+      "authorization",
+      "user",
+      "auth",
+      "session",
+    ];
+    for (const k of commonKeys) {
+      let v = localStorage.getItem(k);
+      if (!v) continue;
+      try {
+        const obj = JSON.parse(v);
+        if (obj && typeof obj === "object") {
+          for (const kk of ["access_token", "token", "jwt", "value"]) {
+            if (looksLikeJWT(obj[kk])) return obj[kk];
+          }
+        }
+      } catch {}
+      v = String(v).replace(/^"(.*)"$/, "$1").trim();
+      if (v.startsWith("Bearer ")) v = v.slice(7).trim();
+      if (looksLikeJWT(v)) return v;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
+    // 2) Quét toàn bộ localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      let v = localStorage.getItem(k);
+      if (!v) continue;
+      try {
+        const obj = JSON.parse(v);
+        if (obj && typeof obj === "object") {
+          for (const vv of Object.values(obj)) {
+            const s = String(vv || "");
+            if (looksLikeJWT(s)) return s;
+          }
+        }
+      } catch {}
+      v = String(v);
+      if (v.startsWith("Bearer ")) v = v.slice(7).trim();
+      if (looksLikeJWT(v)) return v;
+    }
+    return null;
+  };
+
+  const authHeaders = () => {
+    const t = getAccessToken();
+    return t ? { Authorization: `Bearer ${t}` } : {};
+  };
+
+  // ==== FETCH helper (tự gửi cookie + Authorization) ====
+  async function fetchJSON(url, options = {}) {
+    const res = await fetch(url, {
+      credentials: "include", // gửi cookie httpOnly nếu có
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+        ...(options.headers || {}),
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message || `Request failed: ${res.status}`);
+    return data;
+  }
+
+  // ==== STATE ====
+  const [products, setProducts] = useState([]); // bỏ dữ liệu mẫu -> lấy từ BE
   const [searchName, setSearchName] = useState("");
   const [searchCategory] = useState("");
   const [searchStatus] = useState("");
@@ -63,46 +107,196 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [targetId, setTargetId] = useState(null);
+  const [needReauth, setNeedReauth] = useState(false);
 
-  // thêm SP mới
-  const handleAddProduct = (data) => {
-    const [parentCategory, childCategory] = data.category?.includes("-")
-      ? data.category.split("-")
-      : ["", data.category];
+  // Danh mục để map "Parent - Child" -> id
+  const [catById, setCatById] = useState({});
 
-    const stockQty = data.initWarehouse
-      ? Number(data.initialStock || data.weight || 0)
-      : null;
+  // ---- LOAD CATEGORIES ----
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await fetchJSON(`${API}/categories?page=1&limit=1000`);
+        const list = Array.isArray(data) ? data : data.data || data.items || [];
+        const map = {};
+        list.forEach((c) => {
+          const id = c.id_danh_muc ?? c.id ?? c.category_id;
+          map[id] = {
+            id,
+            name: c.ten_danh_muc ?? c.name ?? c.displayName ?? "",
+            parentId: c.parent_id ?? c.parentId ?? null,
+            displayName: c.displayName ?? c.ten_danh_muc ?? c.name ?? "",
+          };
+        });
+        Object.values(map).forEach((c) => {
+          c.parentName = c.parentId && map[c.parentId] ? map[c.parentId].name : "";
+        });
+        setCatById(map);
+      } catch (e) {
+        console.warn("Load categories failed:", e?.message);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const newRow = {
-      id: Date.now(),
-      name: data.name,
-      sku: data.sku || `SP${Date.now()}`,
-      parentCategory: (parentCategory || "").trim(),
-      category: (childCategory || "").trim(),
-      retailPrice: data.retailPrice === "" ? 0 : Number(data.retailPrice),
-      importPrice: data.importPrice === "" ? 0 : Number(data.importPrice),
-      description: data.description || "",
-      image: data.image || "",
-      initWarehouse: !!data.initWarehouse,
-      stock: stockQty,
-      unit: data.initWarehouse ? data.unit : null,
+  // ---- MAP 1 ITEM BE -> UI ROW ----
+  const mapFromBE = (it) => {
+    const id = it.id_san_pham ?? it.id ?? it.product_id;
+    const catId =
+      (typeof it.id_danh_muc === "object"
+        ? it.id_danh_muc?.id_danh_muc
+        : it.id_danh_muc) ?? it.category_id;
+
+    const cat = catId ? catById[catId] : null;
+    const parentCategory = cat?.parentName || "";
+    const childCategory = cat?.displayName || "";
+
+    const stock =
+      it.so_luong_ton ??
+      it.so_luong ??
+      (typeof it.inventory === "object" ? it.inventory?.so_luong_ton_kho : undefined) ??
+      0;
+
+    const retailPrice = Number(it.gia_ban ?? it.price ?? 0);
+    const importPrice = Number(it.gia_nhap ?? it.import_price ?? 0);
+
+    const normalizedStatus =
+      (it.trang_thai || "").toString().toLowerCase() === "inactive"
+        ? "Hết hàng"
+        : stock > 0
+        ? "Còn hàng"
+        : "Hết hàng";
+
+    return {
+      id,
+      name: it.ten_san_pham ?? it.name ?? "",
+      sku: it.sku ?? `SP${id}`,
+      parentCategory,
+      category: childCategory,
+      retailPrice,
+      importPrice,
+      description: it.mo_ta ?? "",
+      image: it.hinh_anh ?? "",
+      initWarehouse: stock > 0,
+      stock,
+      unit: "Cái",
       branch: "Kho mặc định",
+      status: normalizedStatus,
+      _catId: catId || undefined,
     };
+  };
 
-    setProducts((prev) => [...prev, newRow]);
+  // ---- LOAD PRODUCTS ----
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await fetchJSON(`${API}/products?page=1&limit=200`);
+        const raw = Array.isArray(data) ? data : data.items || data.data || [];
+        const mapped = raw.map(mapFromBE);
+        setProducts(mapped);
+        if (typeof seedFromProducts === "function" && mapped.length) {
+          seedFromProducts(mapped);
+        }
+      } catch (e) {
+        toast.error(e.message || "Lỗi tải danh sách sản phẩm");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Object.keys(catById).length]);
+
+  // ---- Tìm id danh mục theo tên ----
+  const findCategoryIdByNames = (parentName, childName) => {
+    const both = Object.values(catById).find(
+      (c) =>
+        (c.parentName || "") === (parentName || "") &&
+        (c.displayName || c.name || "") === (childName || "")
+    );
+    if (both?.id) return both.id;
+    const child = Object.values(catById).find(
+      (c) => (c.displayName || c.name || "") === (childName || "")
+    );
+    return child?.id;
+  };
+
+  // ==== thêm SP mới ====
+  const handleAddProduct = async (data) => {
+    try {
+      const [pName, cName] = data.category?.includes("-")
+        ? data.category.split("-")
+        : ["", data.category];
+
+      const parentCategory = (pName || "").trim();
+      const childCategory = (cName || "").trim();
+
+      const stockQty = data.initWarehouse
+        ? Number(data.initialStock || data.weight || 0)
+        : 0;
+
+      const id_danh_muc = findCategoryIdByNames(parentCategory, childCategory);
+
+      if (!id_danh_muc) {
+        throw new Error("Vui lòng chọn đúng danh mục cha và danh mục con");
+      }
+
+      const payload = {
+        ten_san_pham: data.name,
+        id_danh_muc,
+        gia_ban: Number(data.retailPrice || 0),
+        gia_nhap: Number(data.importPrice || 0),
+        mo_ta: data.description || "",
+        hinh_anh: data.image || "",
+        so_luong_nhap: Number(data.weight || 0),
+        so_luong_ton: stockQty,
+        trang_thai: stockQty > 0 ? "active" : "inactive",
+      };
+
+      const created = await fetchJSON(`${API}/products`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      const newRow = mapFromBE(created);
+      newRow.sku = data.sku || newRow.sku;
+
+      setProducts((prev) => [newRow, ...prev]);
+
+      // 🔶 Khởi tạo kho ngay khi bật initWarehouse
+      if (data.initWarehouse && typeof addToInventory === "function") {
+        const qty =
+          Number(data.initialStock || data.weight || 0) > 0
+            ? Number(data.initialStock || data.weight || 0)
+            : 0;
+
+        addToInventory({
+          sku: newRow.sku,
+          name: newRow.name,
+          productId: newRow.id,
+          unit: data.unit || "Cái",
+          branch: "Kho mặc định",
+          stockQty: qty,
+          importPrice: Number(data.importPrice || 0),
+          retailPrice: Number(data.retailPrice || 0),
+          category: newRow.category,
+          parentCategory: newRow.parentCategory,
+          image: newRow.image || "",
+          description: newRow.description || "",
+        });
+      }
+
+      toast.success("✅ Thêm sản phẩm thành công!");
+    } catch (e) {
+      toast.error(e.message || "Lỗi thêm sản phẩm");
+    }
   };
 
   // ✅ Hàm bán sản phẩm (được gọi khi user mua hàng)
   const handleSellProduct = (sku, qty) => {
     if (!sku || !qty || qty <= 0) return;
 
-    // 1. Trừ kho (context)
     if (typeof sellProduct === "function") {
       sellProduct(sku, qty);
     }
 
-    // 2. Trừ luôn cột stock ở ProductsPage
     setProducts((prev) =>
       prev.map((p) =>
         p.sku === sku ? { ...p, stock: Math.max(0, (p.stock || 0) - qty) } : p
@@ -124,26 +318,35 @@ export default function ProductsPage() {
 
   const confirmDelete = (id) => {
     setTargetId(id);
-    setDeleteOpen(true);
+    setNeedReauth(true);
   };
 
-  const handleConfirmDelete = () => {
-    setProducts((prev) => prev.filter((p) => p.id !== targetId));
+  const handleConfirmDelete = async () => {
+    try {
+      await fetchJSON(`${API}/products/${targetId}`, { method: "DELETE" });
 
-    // ✅ tìm sản phẩm để lấy sku xoá trong kho
-    const deleted = products.find((p) => p.id === targetId);
-    if (deleted?.sku) {
-      removeFromInventory(deleted.sku);
+      setProducts((prev) => prev.filter((p) => p.id !== targetId));
+
+      const deleted = products.find((p) => p.id === targetId);
+      if (deleted?.sku) {
+        removeFromInventory(deleted.sku);
+      }
+
+      toast.success("🗑️ Xóa sản phẩm thành công!");
+      setDeleteOpen(false);
+    } catch (e) {
+      toast.error(e.message || "Lỗi xoá sản phẩm");
+      setDeleteOpen(false);
     }
-
-    toast.success("🗑️ Xóa sản phẩm thành công!");
-    setDeleteOpen(false);
   };
 
   const handleCancelDelete = () => {
     toast.error("❌ Đã hủy thao tác xoá");
     setDeleteOpen(false);
   };
+
+  const uiStatusToBE = (s) =>
+    (s || "").toLowerCase() === "còn hàng" ? "active" : "inactive";
 
   return (
     <div className="p-4 sm:p-6 text-gray-800">
@@ -156,12 +359,6 @@ export default function ProductsPage() {
           className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
         >
           + Thêm sản phẩm
-        </button>
-        <button className="rounded-md bg-amber-300 px-4 py-2 text-gray-900 hover:bg-amber-400">
-          Thêm file Excel
-        </button>
-        <button className="rounded-md bg-orange-400 px-4 py-2 text-gray-900 hover:bg-orange-200">
-          Xuất Excel
         </button>
 
         <div className="flex flex-wrap items-center gap-2 ml-auto">
@@ -194,7 +391,6 @@ export default function ProductsPage() {
             </thead>
             <tbody>
               {filtered.map((row, idx) => {
-                // ✅ Nếu stock = 0 thì override thành Hết hàng
                 const autoStatus = row.stock > 0 ? "Còn hàng" : "Hết hàng";
                 const status = row.status || autoStatus;
 
@@ -219,22 +415,41 @@ export default function ProductsPage() {
 
                     <td className="p-2">
                       {row.retailPrice != null
-                        ? `${row.retailPrice.toLocaleString("vi-VN")} ₫`
+                        ? `${Number(row.retailPrice).toLocaleString("vi-VN")} ₫`
                         : "-"}
                     </td>
-                    
+
                     <td className="p-2 text-center">
                       <select
                         value={status}
-                        onChange={(e) =>
-                          setProducts((prev) =>
-                            prev.map((p) =>
-                              p.id === row.id
-                                ? { ...p, status: e.target.value }
-                                : p
+                        onChange={async (e) => {
+                          const newStatus = e.target.value;
+                          const prev = row.status;
+                          // Cập nhật lạc quan
+                          setProducts((prevList) =>
+                            prevList.map((p) =>
+                              p.id === row.id ? { ...p, status: newStatus } : p
                             )
-                          )
-                        }
+                          );
+                          try {
+                            await fetchJSON(`${API}/products/${row.id}`, {
+                              method: "PATCH",
+                              body: JSON.stringify({
+                                trang_thai: uiStatusToBE(newStatus),
+                              }),
+                            });
+                          } catch (err) {
+                            toast.error(
+                              err.message || "Cập nhật trạng thái thất bại"
+                            );
+                            // Rollback
+                            setProducts((prevList) =>
+                              prevList.map((p) =>
+                                p.id === row.id ? { ...p, status: prev } : p
+                              )
+                            );
+                          }
+                        }}
                         className={`border rounded-md px-2 py-1 text-sm font-medium
                     ${
                       status === "Còn hàng"
@@ -329,6 +544,16 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Re-auth before delete */}
+      <AdminAuthModal
+        open={needReauth}
+        onClose={() => setNeedReauth(false)}
+        onSuccess={() => {
+          setNeedReauth(false);
+          setDeleteOpen(true);
+        }}
+      />
     </div>
   );
 }

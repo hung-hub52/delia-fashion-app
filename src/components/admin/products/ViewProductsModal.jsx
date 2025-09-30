@@ -1,7 +1,8 @@
 // src/components/admin/products/ViewProductsModal.jsx
 "use client";
 import { useState, useEffect } from "react";
-import { X, Pencil, Save, Undo2 } from "lucide-react";
+import { X, Pencil, Save, Undo2, PlusCircle } from "lucide-react";
+import { toast } from "react-hot-toast";
 import { useCategoriesContext } from "@/context/CategoriesContext";
 import { useInventory } from "@/context/InventoryContext";
 
@@ -14,6 +15,8 @@ export default function ViewProductsModal({
   const [closing, setClosing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(product || {});
+  const [showAddQty, setShowAddQty] = useState(false);
+  const [addQty, setAddQty] = useState(0);
   const { categories } = useCategoriesContext();
   const [selectedParent, setSelectedParent] = useState(
     draft.parentCategory || ""
@@ -96,6 +99,63 @@ export default function ViewProductsModal({
     setEditing(false);
   };
 
+  // ==== LƯU & THÊM (cộng dồn vào kho + DB) ====
+  const handleSaveAndAdd = async () => {
+    try {
+      const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${String(token).replace(/^"|"$/g, "")}` } : {}),
+      };
+
+      const qty = Number(addQty || 0);
+
+      // 1) Patch thông tin cơ bản sản phẩm (không đụng số lượng ở đây)
+      const patchBody = {
+        ten_san_pham: draft.name || product.name || "",
+        gia_ban: draft.retailPrice == null || draft.retailPrice === "" ? 0 : Number(draft.retailPrice),
+        gia_nhap: draft.importPrice == null || draft.importPrice === "" ? 0 : Number(draft.importPrice),
+        mo_ta: draft.description || "",
+        hinh_anh: draft.image || product.image || "",
+      };
+      await fetch(`${API}/products/${product.id}`, { method: "PATCH", headers, body: JSON.stringify(patchBody) });
+
+      // 2) Gọi init kho để cộng dồn vào inventory và đồng bộ bảng sản phẩm
+      if (qty > 0) {
+        await fetch(`${API}/inventory/init`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ productId: product.id, qty, branch: draft.branch || "Kho mặc định" }),
+        });
+      }
+
+      // 3) Cập nhật UI cục bộ
+      const payload = {
+        ...product,
+        name: patchBody.ten_san_pham,
+        retailPrice: patchBody.gia_ban,
+        importPrice: patchBody.gia_nhap,
+        description: patchBody.mo_ta,
+        image: patchBody.hinh_anh,
+        stock: Number(product.stock || 0) + qty,
+        unit: draft.unit || product.unit || "",
+        branch: draft.branch || "Kho mặc định",
+      };
+      onUpdate?.(payload);
+      if (qty !== 0) {
+        updateInventory({ ...payload, diff: qty });
+      }
+
+      setShowAddQty(false);
+      setAddQty(0);
+      setEditing(false);
+      toast.success("✅ Lưu và Thêm số lượng thành công!");
+    } catch (e) {
+      toast.error(e?.message || "Lưu và Thêm thất bại");
+    }
+  };
+
   if (!open && !closing) return null;
   if (!product) return null;
 
@@ -111,13 +171,22 @@ export default function ViewProductsModal({
           <h2 className="text-lg font-bold text-white uppercase tracking-wide">
             📖 Thông tin sản phẩm
           </h2>
-          <button
-            onClick={handleClose}
-            className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600 shadow"
-            title="Đóng"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAddQty(true)}
+              className="inline-flex items-center gap-2 rounded-md bg-white/20 px-3 py-2 text-white hover:bg-white/30"
+              title="Thêm số lượng sản phẩm"
+            >
+              <PlusCircle size={16} /> Thêm số lượng sản phẩm
+            </button>
+            <button
+              onClick={handleClose}
+              className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600 shadow"
+              title="Đóng"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Nội dung */}
@@ -377,9 +446,43 @@ export default function ViewProductsModal({
               >
                 <Save size={16} /> Lưu
               </button>
+              {/* Nút 'Thêm số lượng sản phẩm' đã được chuyển lên header */}
             </div>
           )}
         </div>
+        {/* Popup thêm số lượng */}
+        {showAddQty && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
+              <h3 className="text-lg font-semibold mb-3">Thêm số lượng nhập</h3>
+              <div className="mb-4">
+                <label className="block text-sm text-gray-600 mb-1">Số lượng muốn nhập thêm</label>
+                <input
+                  type="number"
+                  value={addQty}
+                  onChange={(e) => setAddQty(Number(e.target.value || 0))}
+                  className="w-full rounded-md border p-2"
+                  placeholder="Nhập số lượng"
+                  min={0}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowAddQty(false)}
+                  className="rounded-md bg-gray-100 px-4 py-2 hover:bg-gray-200"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSaveAndAdd}
+                  className="rounded-md bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-600"
+                >
+                  Xác nhận
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

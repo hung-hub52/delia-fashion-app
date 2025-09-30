@@ -9,6 +9,7 @@ export default function InventoryPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [showHistory, setShowHistory] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const { inventory, history } = useInventory();
 
   const handleSearch = (e) => {
@@ -89,6 +90,11 @@ export default function InventoryPage() {
                   <tr
                     key={idx}
                     className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                    onClick={() => {
+                      setSelectedItem(row);
+                      setShowHistory(true);
+                    }}
+                    style={{ cursor: "pointer" }}
                   >
                     <td className="p-2 text-center">
                       {(page - 1) * PER_PAGE + idx + 1}
@@ -147,8 +153,12 @@ export default function InventoryPage() {
 
       <HisInventoryModal
         open={showHistory}
-        onClose={() => setShowHistory(false)}
-        history={history}
+        onClose={() => {
+          setShowHistory(false);
+          setSelectedItem(null);
+        }}
+        history={selectedItem ? history.filter((h) => h.code === selectedItem.code) : history}
+        title={selectedItem ? `Lịch sử nhập kho - ${selectedItem.name}` : "📜 Lịch sử nhập kho"}
       />
     </div>
   );
