@@ -12,28 +12,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  async function handleLogin(e) {
-  e.preventDefault();
 
-  const res = await fetch('http://localhost:3001/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const adminEmail = "admin@delia.com";
+    const customerEmail = "customer@delia.com";
+    const customerPassword = "123456";
 
-  const data = await res.json();
-  if (!res.ok) {
-    alert(data?.message || 'Đăng nhập thất bại');
-    return;
-  }
-
-  // ✅ LƯU TOKEN & (tuỳ chọn) USER
-  localStorage.setItem('token', data.access_token);
-  localStorage.setItem('user', JSON.stringify(data.user || {}));
-
-  // điều hướng
-  router.push('/admin');
-}
+    if (email === adminEmail) {
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ role: "admin", email: adminEmail })
+      );
+      router.push("/admin");
+    } else if (email === customerEmail && password === customerPassword) {
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ role: "customer", email: customerEmail })
+      );
+      router.push("/"); // về trang chủ
+    } else {
+      alert("Sai tài khoản hoặc mật khẩu!");
+    }
+  };
 
   return (
     <section className="w-full bg-white px-6 py-12">
@@ -42,6 +43,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold mb-6 text-center uppercase">
             Đăng nhập
           </h1>
+
 
           <form className="space-y-4" onSubmit={handleLogin}>
             <div>
@@ -57,7 +59,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Mật khẩu *</label>
+
+              <label className="block text-sm font-medium mb-1">
+                Mật khẩu *
+              </label>
+
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -75,7 +81,19 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+
+
+              {/* Link quên mật khẩu */}
+              <div className="text-right mt-1">
+                <Link
+                  href="/account/forgot-password"
+                  className="text-sm text-pink-600 hover:underline"
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
             </div>
+
 
             <button
               type="submit"
@@ -87,7 +105,12 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-sm">
             Chưa có tài khoản?{" "}
-            <Link href="/account/register" className="text-pink-600 font-medium">
+
+            <Link
+              href="/account/register"
+              className="text-pink-600 font-medium"
+            >
+
               Đăng ký ngay
             </Link>
           </p>

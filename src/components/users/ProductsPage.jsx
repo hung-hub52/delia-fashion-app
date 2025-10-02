@@ -1,3 +1,5 @@
+// src/components/users/ProductPage.jsx link chuyển trang khung sản phăm
+
 "use client";
 import Link from "next/link";
 import ProductGrid from "./ProductGrid";

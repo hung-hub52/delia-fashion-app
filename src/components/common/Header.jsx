@@ -1,18 +1,18 @@
-//src/components/common/Header.jsx
-
 "use client";
 import Link from "next/link";
-import { User, ShoppingCart, Home } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import NavItem from "@/components/common/NavItem"; // ✅ component mới gộp
-
-// Import menu data
+import { User, ShoppingCart, Home, LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import NavItem from "@/components/common/NavItem";
 import { nuItems, namItems, collectionSections } from "@/data/menus";
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   // Scroll effect
   useEffect(() => {
@@ -20,6 +20,33 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Lấy user từ localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    }
+  }, []);
+
+  // Auto close khi click ngoài
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    router.push("/"); // về trang chủ
+  };
 
   return (
     <header
@@ -53,32 +80,26 @@ export default function Header() {
 
           {/* Menu */}
           <ul className="hidden md:flex items-center space-x-8">
-            {/* Trang chủ */}
-            <li>
-              <Link
-                href="/"
-                className={`flex items-center px-2 transition-colors ${
-                  pathname === "/"
-                    ? "text-pink-600 border-b-2 border-pink-600 pb-1"
-                    : "text-gray-800 hover:text-pink-600"
-                } text-sm md:text-base font-medium tracking-wide uppercase`}
-              >
-                <Home size={18} className="mr-1.5" />
-                Trang chủ
-              </Link>
-            </li>
+            <Link
+              href="/"
+              className={`flex items-center gap-1 px-2 py-1 transition-colors ${
+                pathname === "/"
+                  ? "text-pink-600 border-b-2 border-pink-600"
+                  : "text-gray-800 hover:text-pink-600"
+              } text-sm md:text-base font-medium tracking-wide uppercase`}
+            >
+              <Home size={18} className="mb-0.5" />
+              <span>Trang chủ</span>
+            </Link>
 
-            {/* Menu Nữ */}
             <li>
               <NavItem title="Nữ" href="/users/women" items={nuItems} />
             </li>
 
-            {/* Menu Nam */}
             <li>
               <NavItem title="Nam" href="/users/men" items={namItems} />
             </li>
 
-            {/* Bộ sưu tập */}
             <li>
               <NavItem
                 title="Bộ sưu tập"
@@ -87,48 +108,81 @@ export default function Header() {
               />
             </li>
 
-            {/* Tin tức */}
             <li>
-              <Link
-                href="/users/blog"
-                className={`px-2 transition-colors ${
-                  pathname.startsWith("users/blog")
-                    ? "text-pink-600 border-b-2 border-pink-600 pb-1"
-                    : "text-gray-800 hover:text-pink-600"
-                } text-sm md:text-base font-medium tracking-wide uppercase`}
-              >
-                Tin tức
-              </Link>
+              <NavItem title="Tin tức" href="/users/blog" />
             </li>
 
-            {/* Giới thiệu */}
             <li>
-              <Link
-                href="/users/about"
-                className={`px-2 transition-colors ${
-                  pathname.startsWith("/users/about")
-                    ? "text-pink-600 border-b-2 border-pink-600 pb-1"
-                    : "text-gray-800 hover:text-pink-600"
-                } text-sm md:text-base font-medium tracking-wide uppercase`}
-              >
-                Giới Thiệu
-              </Link>
+              <NavItem title="Giới thiệu" href="/users/about" />
             </li>
           </ul>
 
           {/* Search + User + Cart */}
-          <div className="flex items-center space-x-4 text-gray-800">
+          <div className="flex items-center space-x-4 text-gray-800 relative">
             <input
               type="text"
               placeholder="Tìm kiếm..."
               className="border rounded-full px-4 py-1 focus:outline-none text-sm bg-gray-50"
             />
-            <Link href="/account/login" className="hover:text-pink-600">
-              <User size={22} />
-            </Link>
-            <button className="hover:text-pink-600">
+
+            {/* User */}
+            {!user ? (
+              <Link href="/account/login" className="hover:text-pink-600">
+                <User size={22} />
+              </Link>
+            ) : (
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className="flex items-center gap-2 hover:text-pink-600"
+                >
+                  <img
+                    src={user.avatar || "/images/avatar-user.jpg"}
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <span className="hidden md:inline text-sm font-medium">
+                    {user.name || user.email.split("@")[0]}
+                  </span>
+                </button>
+
+                {/* Dropdown menu */}
+                {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-50">
+                    <div className="px-4 py-2 text-sm text-gray-700 border-b">
+                      {user.role === "admin" ? "Quản trị viên" : "Khách hàng"}
+                    </div>
+
+                    <Link
+                      href={
+                        user.role === "admin"
+                          ? "/admin"
+                          : "/users/menuaccount/profile"
+                      }
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Trang cá nhân
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      <LogOut size={16} /> Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cart */}
+            <Link href="/users/cart" className="hover:text-pink-600">
               <ShoppingCart size={22} />
-            </button>
+            </Link>
           </div>
         </div>
       </nav>

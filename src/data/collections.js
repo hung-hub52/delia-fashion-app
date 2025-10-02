@@ -12,7 +12,7 @@ export const collectionProducts = {
       images: ["/products/men/bagM.jpg"],
       price: 470000,
       oldPrice: 672000,
-      discount: 25,
+      sold: 210,
     },
     {
       id: "tui-xach-nu-cong-so",
@@ -22,7 +22,7 @@ export const collectionProducts = {
       images: ["/products/women/bagW.jpg"],
       price: 949000,
       oldPrice: 1599000,
-      discount: 27,
+      sold: 325,
     },
   ],
   wallet: [
@@ -34,7 +34,7 @@ export const collectionProducts = {
       images: ["/products/men/walletM.jpg"],
       price: 400000,
       oldPrice: 550000,
-      discount: 25,
+      sold: 410,
     },
     {
       id: "vi-cam-tay-nu",
@@ -44,7 +44,7 @@ export const collectionProducts = {
       images: ["/products/women/walletW.jpg"],
       price: 279000,
       oldPrice: 555000,
-      discount: 27,
+      sold: 280,
     },
   ],
   balo: [
@@ -56,7 +56,7 @@ export const collectionProducts = {
       images: ["/products/men/baloM.jpg"],
       price: 1290000,
       oldPrice: 1509000,
-      discount: 33,
+      sold: 135,
     },
     {
       id: "balo-da-nu",
@@ -66,7 +66,7 @@ export const collectionProducts = {
       images: ["/products/women/baloW.jpg"],
       price: 790000,
       oldPrice: 1079000,
-      discount: 27,
+      sold: 190,
     },
   ],
   glasses: [
@@ -77,7 +77,7 @@ export const collectionProducts = {
       gender: ["men"],
       images: ["/products/men/glassM.jpg"],
       price: 365000,
-      discount: 25,
+      sold: 260,
     },
     {
       id: "kinh-mat-nu",
@@ -86,7 +86,7 @@ export const collectionProducts = {
       gender: ["women"],
       images: ["/products/women/glassW.jpg"],
       price: 495000,
-      discount: 30,
+      sold: 320,
     },
   ],
   belt: [
@@ -97,7 +97,7 @@ export const collectionProducts = {
       gender: ["men"],
       images: ["/products/men/beltM.jpg"],
       price: 299000,
-      discount: 33,
+      sold: 150,
     },
     {
       id: "that-lung-day-nu",
@@ -107,7 +107,7 @@ export const collectionProducts = {
       images: ["/products/women/beltW.jpg"],
       price: 339000,
       oldPrice: 799000,
-      discount: 38,
+      sold: 210,
     },
   ],
   watch: [
@@ -119,9 +119,8 @@ export const collectionProducts = {
       images: ["/products/men/watchM.jpg"],
       price: 879000,
       oldPrice: 1075000,
-      discount: 19,
+      sold: 400,
     },
-
     {
       id: "dong-ho-olevs-nu",
       key: "watch-women",
@@ -130,7 +129,7 @@ export const collectionProducts = {
       images: ["/products/women/watchW.jpg"],
       price: 899000,
       oldPrice: 1299000,
-      discount: 21,
+      sold: 360,
     },
   ],
   necklace: [
@@ -142,9 +141,8 @@ export const collectionProducts = {
       images: ["/products/men/necklaceM.jpg"],
       price: 499000,
       oldPrice: 799000,
-      discount: 28,
+      sold: 280,
     },
-
     {
       id: "day-chuyen-vang-nu",
       key: "necklace-women-1",
@@ -153,7 +151,7 @@ export const collectionProducts = {
       images: ["/products/women/necklaceW.jpg"],
       price: 599000,
       oldPrice: 895000,
-      discount: 32,
+      sold: 310,
     },
   ],
   bracelet: [
@@ -165,7 +163,7 @@ export const collectionProducts = {
       images: ["/products/men/braceletM.jpg"],
       price: 596000,
       oldPrice: 799000,
-      discount: 38,
+      sold: 170,
     },
     {
       id: "vong-tay-thach-anh-nu",
@@ -175,7 +173,7 @@ export const collectionProducts = {
       images: ["/products/women/braceletW.jpg"],
       price: 699000,
       oldPrice: 999000,
-      discount: 40,
+      sold: 245,
     },
   ],
   scarf: [
@@ -186,7 +184,7 @@ export const collectionProducts = {
       gender: ["men"],
       images: ["/products/men/scarfM.jpg"],
       price: 49000,
-      discount: 42,
+      sold: 120,
     },
     {
       id: "khan-turban-doi-dau-nu",
@@ -195,7 +193,7 @@ export const collectionProducts = {
       gender: ["women"],
       images: ["/products/women/scarfW.jpg"],
       price: 119000,
-      discount: 40,
+      sold: 180,
     },
   ],
   hat: [
@@ -206,7 +204,7 @@ export const collectionProducts = {
       gender: ["men"],
       images: ["/products/men/hatM.jpg"],
       price: 299000,
-      discount: 40,
+      sold: 200,
     },
     {
       id: "mu-vanh-cup-nu",
@@ -215,7 +213,7 @@ export const collectionProducts = {
       gender: ["women"],
       images: ["/products/women/hatW.jpg"],
       price: 245000,
-      discount: 42,
+      sold: 160,
     },
   ],
 };
