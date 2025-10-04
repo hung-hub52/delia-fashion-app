@@ -33,7 +33,7 @@ export const namItems = [
   { name: "Balo Laptop Nam", href: "/users/all-products/men/balo-men" },
   { name: "Kính Nửa Gọng Nam", href: "/users/all-products/men/glasses-men" },
   { name: "Thắt Lưng Vải Dù Nam", href: "/users/all-products/men/belt-men" },
-  { name: "Đồng Hồ G-Shock Nam", href: "/users/all-products/men/watch-men" },
+  { name: "Đồng Hồ GShock Nam", href: "/users/all-products/men/watch-men" },
   { name: "Dây Chuyền Bạc Nam", href: "/users/all-products/men/necklace-men" },
   {
     name: "Vòng Tay Trầm Nam",
@@ -117,7 +117,7 @@ export const collectionSections = [
     href: "/users/all-products/collection/watch",
     items: [
       {
-        name: "Đồng Hồ G-Shock Nam",
+        name: "Đồng Hồ GShock Nam",
         href: "/users/all-products/collection/watch-men",
       },
       {

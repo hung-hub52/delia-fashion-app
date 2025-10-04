@@ -156,8 +156,8 @@ export default function AddressPage() {
 
       {/* Modal popup */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6 relative">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
@@ -169,6 +169,7 @@ export default function AddressPage() {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Input form */}
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
@@ -211,6 +212,7 @@ export default function AddressPage() {
                 className="border rounded px-3 py-2 text-sm w-full"
               />
 
+              {/* Radio chọn */}
               <div className="flex gap-4">
                 {["Nhà Riêng", "Văn Phòng"].map((t) => (
                   <label key={t} className="flex items-center gap-2 text-sm">
@@ -226,6 +228,7 @@ export default function AddressPage() {
                 ))}
               </div>
 
+              {/* Checkbox */}
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -239,6 +242,7 @@ export default function AddressPage() {
                 </label>
               </div>
 
+              {/* Buttons */}
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"

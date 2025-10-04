@@ -1,28 +1,35 @@
+// src/app/users/cart/page.jsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useCart } from "@/context/CartContext";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  const [cart, setCart] = useState([
-    {
-      id: 1,
-      name: "COMBO TRI ÂN gồm 10 chân gà + 1 hũ đùi gà – ĂN CÙNG BẠN",
-      img: "/demo/chicken.jpg",
-      price: 200000,
-      finalPrice: 102000,
-      qty: 1,
-    },
-    {
-      id: 2,
-      name: "Bánh tráng trộn siêu cay",
-      img: "/demo/snack.jpg",
-      price: 50000,
-      finalPrice: 30000,
-      qty: 2,
-    },
-  ]);
-
+  const { cart, setCart } = useCart();
   const [selectedItems, setSelectedItems] = useState([]);
+  const router = useRouter();
+
+  // Load giỏ hàng từ localStorage khi mở trang
+  useEffect(() => {
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      const parsed = JSON.parse(savedCart).map((item) => ({
+        ...item,
+        id: String(item.id),
+      }));
+      setCart(parsed);
+    }
+  }, []);
+
+  // Lưu lại localStorage khi cart thay đổi
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem("cart", JSON.stringify(cart));
+    } else {
+      localStorage.removeItem("cart");
+    }
+  }, [cart]);
 
   // Chọn/bỏ chọn tất cả
   const handleSelectAll = () => {
@@ -35,27 +42,32 @@ export default function CartPage() {
 
   // Chọn 1 sản phẩm
   const handleSelectOne = (id) => {
+    id = String(id);
     setSelectedItems((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
 
-  // Cập nhật số lượng
+  // ✅ Hàm cập nhật số lượng
   const handleQty = (id, type) => {
-    setCart((prev) =>
-      prev.map((item) =>
+    id = String(id);
+    setCart((prev) => {
+      const updated = prev.map((item) =>
         item.id === id
           ? {
               ...item,
               qty: type === "inc" ? item.qty + 1 : Math.max(1, item.qty - 1),
             }
           : item
-      )
-    );
+      );
+      localStorage.setItem("cart", JSON.stringify(updated)); // lưu lại giỏ
+      return updated;
+    });
   };
 
   // Xóa sản phẩm
   const handleDelete = (id) => {
+    id = String(id);
     setCart((prev) => prev.filter((item) => item.id !== id));
     setSelectedItems((prev) => prev.filter((i) => i !== id));
   };
@@ -66,7 +78,7 @@ export default function CartPage() {
     setSelectedItems([]);
   };
 
-  // Tính tổng tiền dựa trên sản phẩm đã chọn
+  // Tính tổng tiền
   const total = cart
     .filter((item) => selectedItems.includes(item.id))
     .reduce((sum, item) => sum + item.finalPrice * item.qty, 0);
@@ -97,8 +109,8 @@ export default function CartPage() {
         <>
           {/* 1. Header */}
           <div className="bg-white rounded-t-lg shadow-sm">
-            <div className="grid grid-cols-6 gap-4 px-4 py-3 border-b text-sm font-medium text-gray-600">
-              <div className="col-span-2 flex items-center gap-2">
+            <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b text-sm font-medium text-gray-600">
+              <div className="col-span-5 flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={
@@ -108,10 +120,10 @@ export default function CartPage() {
                 />
                 <span>Sản phẩm</span>
               </div>
-              <span>Đơn giá</span>
-              <span>Số lượng</span>
-              <span>Số tiền</span>
-              <span>Thao tác</span>
+              <span className="col-span-2 text-center">Đơn giá</span>
+              <span className="col-span-2 text-center">Số lượng</span>
+              <span className="col-span-2 text-center">Số tiền</span>
+              <span className="col-span-1 text-center">Thao tác</span>
             </div>
           </div>
 
@@ -122,9 +134,9 @@ export default function CartPage() {
                 key={item.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-100"
               >
-                {/* Main row */}
-                <div className="grid grid-cols-6 gap-4 px-4 py-3 items-center border-b border-gray-100">
-                  <div className="col-span-2 flex items-center gap-3">
+                <div className="grid grid-cols-12 gap-4 px-4 py-3 items-center border-b border-gray-100">
+                  {/* Cột sản phẩm */}
+                  <div className="col-span-5 flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={selectedItems.includes(item.id)}
@@ -143,7 +155,8 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div>
+                  {/* Cột đơn giá */}
+                  <div className="col-span-2 text-center">
                     <p className="text-gray-400 line-through text-sm">
                       {item.price.toLocaleString()}₫
                     </p>
@@ -152,53 +165,78 @@ export default function CartPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center border rounded w-max border-gray-200">
-                    <button
-                      onClick={() => handleQty(item.id, "dec")}
-                      className="px-2 py-1 text-gray-600"
-                    >
-                      -
-                    </button>
-                    <span className="px-3">{item.qty}</span>
-                    <button
-                      onClick={() => handleQty(item.id, "inc")}
-                      className="px-2 py-1 text-gray-600"
-                    >
-                      +
-                    </button>
+                  {/* Cột số lượng */}
+                  <div className="col-span-2 flex items-center justify-center">
+                    <div className="flex items-center border rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => handleQty(item.id, "dec")}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-95 transition"
+                        disabled={item.qty <= 1}
+                      >
+                        −
+                      </button>
+                      <span className="px-4 py-1 text-gray-800 font-medium min-w-[30px] text-center">
+                        {item.qty}
+                      </span>
+                      <button
+                        onClick={() => handleQty(item.id, "inc")}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-95 transition"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="text-red-600 font-semibold">
+                  {/* Cột số tiền */}
+                  <div className="col-span-2 text-red-600 font-semibold text-center">
                     {(item.finalPrice * item.qty).toLocaleString()}₫
                   </div>
 
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-sm text-red-500 hover:underline"
-                  >
-                    Xóa
-                  </button>
+                  {/* Cột thao tác */}
+                  <div className="col-span-1 text-center">
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="text-sm text-red-500 hover:underline"
+                    >
+                      Xóa
+                    </button>
+                  </div>
                 </div>
 
                 {/* Shop Voucher */}
                 <div className="px-12 py-2 bg-gray-50 text-sm text-gray-600 flex items-center gap-2 rounded-b-lg">
                   <span className="text-green-600">🚚 Miễn phí vận chuyển</span>
-                  <span className="text-gray-500">
-                    Giảm 500.000₫ phí vận chuyển đơn tối thiểu 0₫
-                  </span>
                 </div>
               </div>
             ))}
           </div>
-
           {/* 3. Khuyến mãi toàn sàn */}
           <div className="px-12 py-2 bg-gray-200 border-t border-gray-100 text-sm text-gray-600 flex items-center gap-3 mt-3">
             <span className="text-red-500">🏷️ Thêm Shop Voucher</span>
-            <input
-              type="text"
-              placeholder="Nhập mã giảm giá"
-              className="border rounded px-3 py-1 text-sm border-gray-300"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                id="voucherInput"
+                placeholder="Nhập mã giảm giá"
+                className="border rounded px-3 py-1 text-sm border-gray-300"
+              />
+              <button
+                onClick={() => {
+                  const voucher = document
+                    .getElementById("voucherInput")
+                    .value.trim();
+                  if (voucher) {
+                    localStorage.setItem("shopVoucher", voucher); // 👉 lưu voucher vào localStorage
+                    alert(`Đã áp dụng mã: ${voucher}`);
+                  } else {
+                    alert("Vui lòng nhập mã hợp lệ");
+                  }
+                }}
+                className="text-blue-600 underline hover:text-blue-800"
+              >
+                Áp Dụng
+              </button>
+            </div>
           </div>
 
           {/* 4. Footer tổng cộng */}
@@ -227,10 +265,25 @@ export default function CartPage() {
                 </span>
               </p>
               <button
+                onClick={() => {
+                  if (selectedItems.length === 0) return;
+                  const selectedProducts = cart.filter((item) =>
+                    selectedItems.includes(item.id)
+                  );
+                  localStorage.setItem(
+                    "checkoutItems",
+                    JSON.stringify(selectedProducts)
+                  );
+                  router.push("/users/checkout");
+                }}
                 disabled={selectedItems.length === 0}
-                className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 text-sm disabled:opacity-50"
+                className={`px-6 py-3 rounded text-white transition ${
+                  selectedItems.length === 0
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
               >
-                Mua hàng
+                Mua Hàng
               </button>
             </div>
           </div>

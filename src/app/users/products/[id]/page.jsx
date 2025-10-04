@@ -1,14 +1,19 @@
+//src/app/users/products/[id]/page.jsx
+
 "use client";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
+
+
 import { collectionProducts } from "@/data/collections";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [zoomStyle, setZoomStyle] = useState({});
 
-  // Tìm sản phẩm theo id
   const product =
     Object.values(collectionProducts)
       .flat()
@@ -20,7 +25,6 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Xử lý khi rê chuột vào ảnh
   const handleMouseMove = (e) => {
     const { left, top, width, height } =
       e.currentTarget.getBoundingClientRect();
@@ -28,13 +32,40 @@ export default function ProductDetailPage() {
     const y = ((e.pageY - top) / height) * 100;
     setZoomStyle({
       transformOrigin: `${x}% ${y}%`,
-      transform: "scale(2)", // phóng to gấp đôi
+      transform: "scale(2)",
     });
   };
 
   const handleMouseLeave = () => {
     setZoomStyle({ transform: "scale(1)" });
   };
+
+ const addToCart = () => {
+   let cart = JSON.parse(localStorage.getItem("cart")) || [];
+   const pid = String(product.id);
+
+   const existingIndex = cart.findIndex((item) => item.id === pid);
+   if (existingIndex > -1) {
+     cart[existingIndex].qty += 1;
+   } else {
+     cart.push({
+       id: pid,
+       name: product.name,
+       img: product.images[0],
+       price: product.oldPrice || product.price,
+       finalPrice: product.price,
+       qty: 1,
+     });
+   }
+
+   localStorage.setItem("cart", JSON.stringify(cart));
+
+  window.dispatchEvent(new Event("cart-updated"));
+
+   toast.success("Đã thêm vào giỏ hàng");
+   setTimeout(() => router.push("/users/cart"), 1200);
+ };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -74,7 +105,6 @@ export default function ProductDetailPage() {
           {product.name}
         </h1>
 
-        {/* Lượt mua */}
         <p className="text-sm text-gray-600 mb-4">
           Đã bán:{" "}
           <span className="font-semibold text-pink-600">
@@ -100,7 +130,7 @@ export default function ProductDetailPage() {
           )}
         </div>
 
-        {/* Mô tả sản phẩm */}
+        {/* Mô tả */}
         <div className="mb-6 text-gray-800">
           <ul className="text-sm text-gray-700 space-y-1">
             <li>
@@ -123,12 +153,27 @@ export default function ProductDetailPage() {
           </ul>
         </div>
 
-        {/* Nút hành động */}
+        {/* Nút */}
         <div className="flex gap-4 mb-8">
-          <button className="bg-red-600 text-white px-6 py-3 rounded hover:bg-red-700">
+          <button
+            onClick={() => router.push("/users/checkout")}
+            className="bg-red-600 text-white px-6 py-3 rounded hover:bg-red-700"
+          >
             ĐẶT HÀNG NHANH
           </button>
-          <button className="border border-gray-400 px-6 py-3 rounded hover:bg-gray-100 text-gray-800">
+          <button
+            onClick={() => {
+              const user = localStorage.getItem("user");
+              if (!user) {
+                // ❌ chưa đăng nhập → chuyển tới login
+                router.push("/account/login");
+              } else {
+                // ✅ đã đăng nhập → thêm giỏ hàng
+                addToCart();
+              }
+            }}
+            className="border border-gray-400 px-6 py-3 rounded hover:bg-gray-100 text-gray-800"
+          >
             THÊM VÀO GIỎ HÀNG
           </button>
         </div>
