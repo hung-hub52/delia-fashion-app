@@ -9,6 +9,8 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyAdminDto } from './dto/verify-admin.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyForgotOtpDto } from './dto/verify-forgot-otp.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('Auth')
@@ -44,7 +46,7 @@ export class AuthController {
     return { ok: true };
   }
 
-  @ApiOperation({ summary: 'Đổi mật khẩu (cần JWT)' })
+    @ApiOperation({ summary: 'Đổi mật khẩu (cần JWT)' })
   @ApiBearerAuth() @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
@@ -52,5 +54,17 @@ export class AuthController {
     const ok = await this.auth.changePassword(userId, dto.current_password, dto.new_password);
     if (!ok) throw new HttpException('Đổi mật khẩu thất bại', HttpStatus.BAD_REQUEST);
     return { ok: true };
+  }
+
+  @ApiOperation({ summary: 'Yêu cầu quên mật khẩu (gửi OTP)' })
+  @Post('forgot-password')
+  requestForgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.requestForgotPassword(dto);
+  }
+
+  @ApiOperation({ summary: 'Xác nhận OTP và đặt lại mật khẩu' })
+  @Post('forgot-password/verify')
+  verifyForgotOtp(@Body() dto: VerifyForgotOtpDto) {
+    return this.auth.verifyForgotOtp(dto);
   }
 }

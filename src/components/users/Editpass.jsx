@@ -1,15 +1,73 @@
-// src/components/users/EditPass.jsx đổi mật khẩu
+// src/components/users/EditPass.jsx đổi mật khẩu (API thật)
 
 "use client";
+
 import { useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
+// ==== Config API ====
+const API =
+  (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(
+    /\/$/,
+    ""
+  );
+
+// ==== Helpers ====
+function getToken() {
+  if (typeof window === "undefined") return null;
+  const keys = [
+    "token",
+    "access_token",
+    "jwt",
+    "authToken",
+    "Authorization",
+    "authorization",
+    "user",
+    "auth",
+    "session",
+  ];
+  for (const k of keys) {
+    let v = localStorage.getItem(k);
+    if (!v) continue;
+    try {
+      const obj = JSON.parse(v);
+      for (const kk of ["access_token", "token", "jwt", "value"]) {
+        const cand = obj?.[kk];
+        if (typeof cand === "string" && cand.split(".").length === 3) return cand;
+      }
+    } catch {}
+    v = String(v).replace(/^"(.*)"$/, "$1").trim();
+    if (v.startsWith("Bearer ")) v = v.slice(7).trim();
+    if (v.split(".").length === 3) return v;
+  }
+  return null;
+}
+
+function clearAuth() {
+  try {
+    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("jwt");
+    localStorage.removeItem("user");
+  } catch {}
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("userUpdated"));
+  }
+}
+
+// ==== Component ====
 export default function EditPass({ onBack }) {
+  const router = useRouter();
+
   const [oldPass, setOldPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [captcha, setCaptcha] = useState("");
   const [captchaInput, setCaptchaInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   // State toggle hiển thị
   const [showOld, setShowOld] = useState(false);
@@ -31,40 +89,66 @@ export default function EditPass({ onBack }) {
     setCaptcha(generateCaptcha());
   }, []);
 
-  const handleUpdate = (e) => {
+  async function callChangePasswordAPI(currentPassword, newPassword) {
+    const token = getToken();
+    const res = await fetch(`${API}/auth/change-password`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.message || `HTTP ${res.status}`);
+    }
+    return true;
+  }
+
+  const handleUpdate = async (e) => {
     e.preventDefault();
+    setError("");
 
-    // Lấy pass cũ từ localStorage (mock data)
-    const savedPass = localStorage.getItem("userPassword") || "123456";
-
-    if (oldPass !== savedPass) {
-      alert("Mật khẩu cũ không đúng!");
+    if (!oldPass || !newPass || !confirmPass) {
+      setError("Vui lòng nhập đầy đủ các trường bắt buộc!");
       return;
     }
-
     if (newPass.length < 6) {
-      alert("Mật khẩu mới phải ít nhất 6 ký tự!");
+      setError("Mật khẩu mới phải ít nhất 6 ký tự!");
       return;
     }
-
     if (newPass !== confirmPass) {
-      alert("Mật khẩu mới nhập lại không khớp!");
+      setError("Mật khẩu mới nhập lại không khớp!");
+      return;
+    }
+    if (captchaInput.trim() !== captcha) {
+      setError("Captcha không chính xác!");
+      setCaptcha(generateCaptcha());
+      setCaptchaInput("");
       return;
     }
 
-    if (captchaInput !== captcha) {
-      alert("Captcha không chính xác!");
-      return;
-    }
+    setSubmitting(true);
+    try {
+      await callChangePasswordAPI(oldPass, newPass);
 
-    // Lưu mật khẩu mới
-    localStorage.setItem("userPassword", newPass);
-    alert("Đổi mật khẩu thành công!");
-    setOldPass("");
-    setNewPass("");
-    setConfirmPass("");
-    setCaptcha(generateCaptcha());
-    setCaptchaInput("");
+      // Thông báo + điều hướng Login
+      toast.success("Đổi mật khẩu thành công! Vui lòng đăng nhập lại!");
+      clearAuth();
+      router.replace("/account/login");
+    } catch (err) {
+      setError(err.message || "Đổi mật khẩu thất bại!");
+      setCaptcha(generateCaptcha());
+      setCaptchaInput("");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -81,6 +165,7 @@ export default function EditPass({ onBack }) {
               value={oldPass}
               onChange={(e) => setOldPass(e.target.value)}
               className="border rounded px-3 py-2 text-sm w-full pr-10"
+              autoComplete="current-password"
             />
             <button
               type="button"
@@ -101,6 +186,7 @@ export default function EditPass({ onBack }) {
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
               className="border rounded px-3 py-2 text-sm w-full pr-10"
+              autoComplete="new-password"
             />
             <button
               type="button"
@@ -123,6 +209,7 @@ export default function EditPass({ onBack }) {
               value={confirmPass}
               onChange={(e) => setConfirmPass(e.target.value)}
               className="border rounded px-3 py-2 text-sm w-full pr-10"
+              autoComplete="new-password"
             />
             <button
               type="button"
@@ -140,7 +227,6 @@ export default function EditPass({ onBack }) {
             Nhập mã xác nhận
           </label>
           <div className="flex items-center gap-3">
-            {/* Ô nhập captcha */}
             <input
               type="text"
               value={captchaInput}
@@ -149,67 +235,11 @@ export default function EditPass({ onBack }) {
               placeholder="••••••"
               maxLength={6}
             />
-            {/* Mã captcha */}
             <div className="relative inline-block">
-              {/* Text Captcha */}
               <span className="px-4 py-2 bg-gray-100 border rounded font-mono font-bold text-xl tracking-widest text-green-700 opacity-90 select-none relative z-10">
                 {captcha}
               </span>
-
-              {/* Các đường gạch chéo, ngang, dọc */}
-              <svg
-                className="absolute inset-0 w-full h-full pointer-events-none z-20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {/* Đường chéo đậm */}
-                <line
-                  x1="0%"
-                  y1="20%"
-                  x2="100%"
-                  y2="80%"
-                  stroke="rgba(0,128,0,0.5)"
-                  strokeWidth="3"
-                />
-                <line
-                  x1="100%"
-                  y1="30%"
-                  x2="0%"
-                  y2="90%"
-                  stroke="rgba(0,128,0,0.5)"
-                  strokeWidth="3"
-                />
-
-                {/* Đường ngang */}
-                <line
-                  x1="0%"
-                  y1="50%"
-                  x2="100%"
-                  y2="55%"
-                  stroke="rgba(0,128,0,0.4)"
-                  strokeWidth="2"
-                />
-
-                {/* Đường dọc */}
-                <line
-                  x1="40%"
-                  y1="0%"
-                  x2="40%"
-                  y2="100%"
-                  stroke="rgba(0,128,0,0.4)"
-                  strokeWidth="2"
-                />
-                <line
-                  x1="70%"
-                  y1="0%"
-                  x2="70%"
-                  y2="100%"
-                  stroke="rgba(0,128,0,0.3)"
-                  strokeWidth="1.5"
-                />
-              </svg>
             </div>
-
-            {/* Nút đổi captcha */}
             <button
               type="button"
               onClick={() => setCaptcha(generateCaptcha())}
@@ -220,20 +250,24 @@ export default function EditPass({ onBack }) {
           </div>
         </div>
 
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
         {/* Buttons */}
         <div className="flex justify-end gap-3 pt-4">
           <button
             type="button"
             onClick={onBack}
             className="px-4 py-2 border rounded text-sm"
+            disabled={submitting}
           >
             Trở lại
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+            disabled={submitting}
+            className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-60"
           >
-            Cập nhật
+            {submitting ? "Đang cập nhật..." : "Cập nhật"}
           </button>
         </div>
       </form>

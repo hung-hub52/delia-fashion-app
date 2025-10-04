@@ -1,30 +1,46 @@
-// src/components/admin/menuUsers/ChangePasswordModal.jsx
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X, Eye, EyeOff, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
 
+/* ===== Helpers: token & logout ===== */
+function extractJwtMaybe(str) {
+  if (!str) return null;
+  let s = String(str).replace(/^"(.*)"$/, "$1").trim();
+  if (s.startsWith("Bearer ")) s = s.slice(7).trim();
+  return s.split(".").length === 3 ? s : null;
+}
 function getToken() {
   if (typeof window === "undefined") return null;
-  const keys = ["token","access_token","jwt","authToken","Authorization","authorization","user","auth","session"];
+  const keys = ["token", "access_token", "jwt", "authToken", "Authorization", "authorization", "user", "auth", "session"];
   for (const k of keys) {
-    let v = localStorage.getItem(k);
-    if (!v) continue;
+    const raw = localStorage.getItem(k);
+    if (!raw) continue;
+    // json object?
     try {
-      const obj = JSON.parse(v);
-      for (const kk of ["access_token","token","jwt","value"]) {
-        const cand = obj?.[kk];
-        if (typeof cand === "string" && cand.split(".").length === 3) return cand;
+      const obj = JSON.parse(raw);
+      for (const kk of ["access_token", "token", "jwt", "value"]) {
+        const cand = extractJwtMaybe(obj?.[kk]);
+        if (cand) return cand;
       }
     } catch {}
-    v = String(v).replace(/^"(.*)"$/, "$1").trim();
-    if (v.startsWith("Bearer ")) v = v.slice(7).trim();
-    if (v.split(".").length === 3) return v;
+    const fromStr = extractJwtMaybe(raw);
+    if (fromStr) return fromStr;
   }
   return null;
+}
+function clearAuth() {
+  try {
+    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("jwt");
+    localStorage.removeItem("user");
+    window.dispatchEvent(new Event("userUpdated"));
+  } catch {}
 }
 
 export default function ChangePasswordModal({
@@ -33,6 +49,8 @@ export default function ChangePasswordModal({
   onChangePassword,
   user,
 }) {
+  const router = useRouter();
+
   const [current, setCurrent] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -65,8 +83,16 @@ export default function ChangePasswordModal({
       setError("");
       setCaptcha(genCaptcha());
       setCaptchaInput("");
+
+      // nếu không có token thì điều hướng về login luôn
+      const t = getToken();
+      if (!t) {
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
+        clearAuth();
+        setTimeout(() => router.replace("/account/login"), 800);
+      }
     }
-  }, [open]);
+  }, [open, router]);
 
   if (!open) return null;
 
@@ -77,16 +103,17 @@ export default function ChangePasswordModal({
 
   // gọi API đổi mật khẩu (/auth/change-password)
   const callChangePasswordAPI = async (currentPassword, newPassword) => {
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken() || ""}`,
-    };
+    const token = getToken();
+    if (!token) return false;
     const res = await fetch(`${API}/auth/change-password`, {
       method: "POST",
       credentials: "include",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
-    }).catch(()=> null);
+    }).catch(() => null);
     return !!res?.ok;
   };
 
@@ -121,9 +148,19 @@ export default function ChangePasswordModal({
         setLoading(false);
         return;
       }
-      onChangePassword?.(newPass); // cập nhật UI nếu cha muốn
+
+      // cập nhật UI nếu cha muốn
+      onChangePassword?.(newPass);
+
+      // ✅ Thông báo thành công + ĐÓNG MODAL + ĐĂNG XUẤT + CHUYỂN LOGIN
+      toast.success("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
       onClose?.();
-      toast.success("Đổi mật khẩu thành công!");
+
+      clearAuth();
+      // chờ 1s để người dùng kịp nhìn toast rồi điều hướng
+      setTimeout(() => {
+        router.replace("/account/login");
+      }, 1000);
     } catch {
       setError("Đổi mật khẩu thất bại!");
       toast.error("Đổi mật khẩu thất bại!");

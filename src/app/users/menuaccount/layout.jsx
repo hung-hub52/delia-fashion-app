@@ -1,20 +1,49 @@
+// src/app/users/menuaccount/layout.jsx
 "use client";
 import { User, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+function readUser() {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function MenuAccountLayout({ children }) {
   const pathname = usePathname();
   const [user, setUser] = useState(null);
 
-  // lấy user từ localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("user");
-    if (saved) {
-      setUser(JSON.parse(saved));
-    }
+    const load = () => setUser(readUser());
+    load(); // lần đầu
+
+    // 🔊 nghe sự kiện cập nhật từ mọi nơi trong app
+    window.addEventListener("userUpdated", load);
+    window.addEventListener("storage", load); // thay đổi localStorage từ tab/route khác
+
+    return () => {
+      window.removeEventListener("userUpdated", load);
+      window.removeEventListener("storage", load);
+    };
   }, []);
+
+  // 🔁 khi đổi route, đọc lại user (phòng khi header/route khác vừa logout)
+  useEffect(() => {
+    setUser(readUser());
+  }, [pathname]);
+
+  const avatar =
+    user?.avatar ||
+    user?.anh_dai_dien ||
+    "/images/avatar-user.jpg";
+
+  const displayName =
+    user?.name || user?.ho_ten || (user?.email ? user.email.split("@")[0] : "Khách");
 
   return (
     <section className="w-full bg-white px-6 py-12 text-gray-800">
@@ -24,14 +53,12 @@ export default function MenuAccountLayout({ children }) {
           {/* Avatar + Info */}
           <div className="flex flex-col items-center mb-6">
             <img
-              src="/images/avatar-user.jpg"
+              src={avatar}
               alt="avatar"
-              className="w-20 h-20 rounded-full mb-2"
+              className="w-20 h-20 rounded-full mb-2 object-cover border"
+              referrerPolicy="no-referrer"
             />
-            <p className="font-bold">
-              {user ? user.name || user.email.split("@")[0] : "Khách"}
-            </p>
-            <p className="text-xs text-gray-500 mt-2">Còn 3 lượt đổi hôm nay</p>
+            <p className="font-bold">{displayName}</p>
           </div>
 
           {/* Menu */}

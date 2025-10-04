@@ -1,27 +1,21 @@
-// src/components/admin/customers/AdminAuthModal.jsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { API_URL as API } from "@/utils/api";
 
-const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
-
-// ---- Helpers (tự chứa, không phụ thuộc file khác) ----
 function getToken() {
   if (typeof window === "undefined") return null;
-  // các key phổ biến
   const keys = ["token", "access_token", "jwt", "Authorization", "authorization"];
   for (const k of keys) {
     let v = localStorage.getItem(k);
     if (!v) continue;
     try {
-      // nếu là JSON -> thử bóc field phổ biến
       const obj = JSON.parse(v);
       for (const kk of ["access_token", "token", "jwt", "value"]) {
         const cand = obj?.[kk];
         if (typeof cand === "string" && cand.split(".").length === 3) return cand;
       }
     } catch {}
-    // chuỗi thuần
     v = String(v).replace(/^"(.*)"$/, "$1").trim();
     if (v.startsWith("Bearer ")) v = v.slice(7).trim();
     if (v.split(".").length === 3) return v;
@@ -43,7 +37,6 @@ export default function AdminAuthModal({ open, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef(null);
 
-  // reset khi mở & focus input
   useEffect(() => {
     if (open) {
       setPassword("");
@@ -56,7 +49,7 @@ export default function AdminAuthModal({ open, onClose, onSuccess }) {
     if (!password) return;
     setSubmitting(true);
     try {
-      // 1) Thử verify qua endpoint re-auth (yêu cầu JWT hợp lệ)
+      // 1) Thử verify-admin (tự đính kèm token thủ công để tránh redirect auto)
       const token = getToken();
       const res = await fetch(`${API}/auth/verify-admin`, {
         method: "POST",
@@ -65,16 +58,16 @@ export default function AdminAuthModal({ open, onClose, onSuccess }) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ password }),
+        credentials: "include",
       });
 
       if (res.ok) {
-        // { ok: true }
         onSuccess?.();
         onClose?.();
         return;
       }
 
-      // 2) Nếu guard chặn (401) hoặc vẫn fail => fallback: login lại bằng email hiện có + mật khẩu vừa nhập
+      // 2) Fallback: đăng nhập lại bằng email đang lưu + password vừa nhập
       const email = getSavedEmail();
       if (!email) {
         const data = await res.json().catch(() => ({}));
@@ -85,6 +78,7 @@ export default function AdminAuthModal({ open, onClose, onSuccess }) {
       const res2 = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
       const data2 = await res2.json().catch(() => ({}));
@@ -94,9 +88,14 @@ export default function AdminAuthModal({ open, onClose, onSuccess }) {
         return;
       }
 
-      // lưu token mới + user mới (nếu BE trả)
       try {
+        // dọn token cũ tránh xung đột
+        localStorage.removeItem("jwt");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("Authorization");
+        // lưu token mới
         localStorage.setItem("token", data2.access_token);
+        localStorage.setItem("access_token", data2.access_token);
         if (data2.user) localStorage.setItem("user", JSON.stringify(data2.user));
       } catch {}
 

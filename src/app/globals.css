@@ -90,6 +90,33 @@ body {
   }
 }
 
+/* Header single line fix */
+header nav > div {
+  flex-wrap: nowrap !important;
+  min-height: 60px;
+}
+
+header nav ul {
+  flex-wrap: nowrap !important;
+}
+
+header nav ul li {
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1280px) {
+  header nav ul {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  header nav ul {
+    gap: 0.5rem;
+  }
+}
+
 
 @keyframes fade-slide-down {
   0% {

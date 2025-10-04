@@ -99,7 +99,7 @@ export default function InventoryPage() {
                     <td className="p-2 text-center">
                       {(page - 1) * PER_PAGE + idx + 1}
                     </td>
-                    <td className="p-2">{row.code}</td>
+                    <td className="p-2">SP{row.code}</td>
                     <td className="p-2">{row.name}</td>
                     <td className="p-2">{row.branch}</td>
 

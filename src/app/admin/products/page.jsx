@@ -1,4 +1,3 @@
-// src/app/admin/products/page.jsx
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -9,96 +8,24 @@ import AddProductsModal from "@/components/admin/products/AddProductsModal";
 import ViewProductsModal from "@/components/admin/products/ViewProductsModal";
 import { toast } from "react-hot-toast";
 import { useInventory } from "@/context/InventoryContext";
+import { fetchAPI } from "@/utils/api";
 
 export default function ProductsPage() {
   const {
     seedFromProducts,
     removeFromInventory,
     sellProduct,
-    addToInventory, // ✅ dùng để khởi tạo kho ngay khi thêm SP
+    addToInventory,
   } = useInventory() || {};
 
-  // ==== BE CONFIG (hardcode như yêu cầu) ====
-  const API = "http://localhost:3001/api";
-
-  // ====== AUTH: tìm & chuẩn hoá token ở mọi định dạng ======
-  const looksLikeJWT = (s) => typeof s === "string" && s.split(".").length === 3;
-
-  const getAccessToken = () => {
-    if (typeof window === "undefined") return null;
-
-    // 1) Thử các key phổ biến
-    const commonKeys = [
-      "token",
-      "access_token",
-      "jwt",
-      "authToken",
-      "Authorization",
-      "authorization",
-      "user",
-      "auth",
-      "session",
-    ];
-    for (const k of commonKeys) {
-      let v = localStorage.getItem(k);
-      if (!v) continue;
-      try {
-        const obj = JSON.parse(v);
-        if (obj && typeof obj === "object") {
-          for (const kk of ["access_token", "token", "jwt", "value"]) {
-            if (looksLikeJWT(obj[kk])) return obj[kk];
-          }
-        }
-      } catch {}
-      v = String(v).replace(/^"(.*)"$/, "$1").trim();
-      if (v.startsWith("Bearer ")) v = v.slice(7).trim();
-      if (looksLikeJWT(v)) return v;
-    }
-
-    // 2) Quét toàn bộ localStorage
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      let v = localStorage.getItem(k);
-      if (!v) continue;
-      try {
-        const obj = JSON.parse(v);
-        if (obj && typeof obj === "object") {
-          for (const vv of Object.values(obj)) {
-            const s = String(vv || "");
-            if (looksLikeJWT(s)) return s;
-          }
-        }
-      } catch {}
-      v = String(v);
-      if (v.startsWith("Bearer ")) v = v.slice(7).trim();
-      if (looksLikeJWT(v)) return v;
-    }
-    return null;
-  };
-
-  const authHeaders = () => {
-    const t = getAccessToken();
-    return t ? { Authorization: `Bearer ${t}` } : {};
-  };
-
-  // ==== FETCH helper (tự gửi cookie + Authorization) ====
-  async function fetchJSON(url, options = {}) {
-    const res = await fetch(url, {
-      credentials: "include", // gửi cookie httpOnly nếu có
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeaders(),
-        ...(options.headers || {}),
-      },
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.message || `Request failed: ${res.status}`);
-    return data;
+  // dùng fetchAPI cho toàn bộ API call
+  async function fetchJSON(endpoint, options = {}) {
+    // endpoint: "/products?..." (relative)
+    return fetchAPI(endpoint, options);
   }
 
   // ==== STATE ====
-  const [products, setProducts] = useState([]); // bỏ dữ liệu mẫu -> lấy từ BE
+  const [products, setProducts] = useState([]);
   const [searchName, setSearchName] = useState("");
   const [searchCategory] = useState("");
   const [searchStatus] = useState("");
@@ -116,7 +43,7 @@ export default function ProductsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await fetchJSON(`${API}/categories?page=1&limit=1000`);
+        const data = await fetchJSON(`/categories?page=1&limit=1000`);
         const list = Array.isArray(data) ? data : data.data || data.items || [];
         const map = {};
         list.forEach((c) => {
@@ -190,7 +117,7 @@ export default function ProductsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await fetchJSON(`${API}/products?page=1&limit=200`);
+        const data = await fetchJSON(`/products?page=1&limit=200`);
         const raw = Array.isArray(data) ? data : data.items || data.data || [];
         const mapped = raw.map(mapFromBE);
         setProducts(mapped);
@@ -250,7 +177,7 @@ export default function ProductsPage() {
         trang_thai: stockQty > 0 ? "active" : "inactive",
       };
 
-      const created = await fetchJSON(`${API}/products`, {
+      const created = await fetchJSON(`/products`, {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -260,7 +187,7 @@ export default function ProductsPage() {
 
       setProducts((prev) => [newRow, ...prev]);
 
-      // 🔶 Khởi tạo kho ngay khi bật initWarehouse
+      // Khởi tạo kho ngay khi bật initWarehouse
       if (data.initWarehouse && typeof addToInventory === "function") {
         const qty =
           Number(data.initialStock || data.weight || 0) > 0
@@ -323,7 +250,7 @@ export default function ProductsPage() {
 
   const handleConfirmDelete = async () => {
     try {
-      await fetchJSON(`${API}/products/${targetId}`, { method: "DELETE" });
+      await fetchJSON(`/products/${targetId}`, { method: "DELETE" });
 
       setProducts((prev) => prev.filter((p) => p.id !== targetId));
 
@@ -432,7 +359,7 @@ export default function ProductsPage() {
                             )
                           );
                           try {
-                            await fetchJSON(`${API}/products/${row.id}`, {
+                            await fetchJSON(`/products/${row.id}`, {
                               method: "PATCH",
                               body: JSON.stringify({
                                 trang_thai: uiStatusToBE(newStatus),

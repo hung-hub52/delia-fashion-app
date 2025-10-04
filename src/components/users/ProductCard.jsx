@@ -4,6 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { calculateDiscount } from "@/utils/price";
 
+// ✅ Format số tiền nhất quán (không dùng toLocaleString)
+function formatPrice(price) {
+  if (!price) return "0";
+  return String(price).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+}
+
 export default function ProductCard({ product }) {
   // Tính % giảm tự động
   const discountPercent = calculateDiscount(product.oldPrice, product.price);
@@ -43,15 +49,15 @@ export default function ProductCard({ product }) {
           </p>
         )}
 
-        {/* Giá */}
-        <div className="flex items-center gap-2">
+                {/* Giá */}
+        <div className="flex items-center gap-2" suppressHydrationWarning>
           {hasDiscount && (
-            <span className="text-gray-400 text-sm line-through">
-              {product.oldPrice.toLocaleString()}₫
+            <span className="text-gray-400 text-sm line-through" suppressHydrationWarning>
+              {formatPrice(product.oldPrice)}₫
             </span>
           )}
-          <span className="text-red-600 font-bold">
-            {product.price.toLocaleString()}₫
+          <span className="text-red-600 font-bold" suppressHydrationWarning>
+            {formatPrice(product.price)}₫
           </span>
         </div>
 

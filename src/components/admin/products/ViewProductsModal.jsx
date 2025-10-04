@@ -16,7 +16,10 @@ export default function ViewProductsModal({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(product || {});
   const [showAddQty, setShowAddQty] = useState(false);
-  const [addQty, setAddQty] = useState(0);
+
+  // ❗ Sửa lỗi: để rỗng và dùng string để tránh "0" mặc định của number input
+  const [addQty, setAddQty] = useState("");
+
   const { categories } = useCategoriesContext();
   const [selectedParent, setSelectedParent] = useState(
     draft.parentCategory || ""
@@ -109,6 +112,7 @@ export default function ViewProductsModal({
         ...(token ? { Authorization: `Bearer ${String(token).replace(/^"|"$/g, "")}` } : {}),
       };
 
+      // ❗ qty lấy từ chuỗi addQty (có thể rỗng) -> parse về số
       const qty = Number(addQty || 0);
 
       // 1) Patch thông tin cơ bản sản phẩm (không đụng số lượng ở đây)
@@ -148,7 +152,7 @@ export default function ViewProductsModal({
       }
 
       setShowAddQty(false);
-      setAddQty(0);
+      setAddQty(""); // ❗ reset về rỗng
       setEditing(false);
       toast.success("✅ Lưu và Thêm số lượng thành công!");
     } catch (e) {
@@ -173,7 +177,10 @@ export default function ViewProductsModal({
           </h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowAddQty(true)}
+              onClick={() => {
+                setAddQty("");        // ❗ mở popup thì làm rỗng input
+                setShowAddQty(true);
+              }}
               className="inline-flex items-center gap-2 rounded-md bg-white/20 px-3 py-2 text-white hover:bg-white/30"
               title="Thêm số lượng sản phẩm"
             >
@@ -450,25 +457,37 @@ export default function ViewProductsModal({
             </div>
           )}
         </div>
+
         {/* Popup thêm số lượng */}
         {showAddQty && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
             <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
               <h3 className="text-lg font-semibold mb-3">Thêm số lượng nhập</h3>
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-1">Số lượng muốn nhập thêm</label>
+                <label className="block text-sm text-gray-600 mb-1">
+                  Số lượng muốn nhập thêm
+                </label>
                 <input
-                  type="number"
+                  // ❗ Sửa lỗi: dùng text + inputMode để cho phép rỗng, không hiện 0
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d*"
                   value={addQty}
-                  onChange={(e) => setAddQty(Number(e.target.value || 0))}
+                  onChange={(e) => {
+                    // Chỉ giữ lại chữ số
+                    const digits = e.target.value.replace(/\D/g, "");
+                    setAddQty(digits);
+                  }}
                   className="w-full rounded-md border p-2"
                   placeholder="Nhập số lượng"
-                  min={0}
                 />
               </div>
               <div className="flex justify-end gap-2">
                 <button
-                  onClick={() => setShowAddQty(false)}
+                  onClick={() => {
+                    setShowAddQty(false);
+                    setAddQty(""); // reset về rỗng khi đóng
+                  }}
                   className="rounded-md bg-gray-100 px-4 py-2 hover:bg-gray-200"
                 >
                   Hủy

@@ -41,10 +41,10 @@ export default function NavItem({
     >
       {/* Nút / Link chính */}
       <div className="flex items-center">
-        {href ? (
+                {href ? (
           <Link
             href={href}
-            className={`flex items-center gap-1 uppercase font-medium px-2 py-1 transition-colors ${
+            className={`flex items-center gap-1 text-sm lg:text-base uppercase font-medium px-2 py-1 transition-colors ${
               isActive || open
                 ? "text-pink-600 border-b-2 border-pink-600"
                 : "text-gray-800 hover:text-pink-600"
@@ -57,7 +57,7 @@ export default function NavItem({
           <button
             type="button"
             onClick={() => setOpen(!open)}
-            className={`flex items-center gap-1 uppercase font-medium px-2 py-1 transition-colors ${
+            className={`flex items-center gap-1 text-sm lg:text-base uppercase font-medium px-2 py-1 transition-colors ${
               isActive || open
                 ? "text-pink-600 border-b-2 border-pink-600"
                 : "text-gray-800 hover:text-pink-600"

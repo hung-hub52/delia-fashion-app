@@ -1,4 +1,3 @@
-// src/modules/users/users.service.ts
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
@@ -12,7 +11,7 @@ export class UsersService {
     return this.userRepo.findOne({ where: { id_nguoidung: id } as any });
   }
 
-  /* ---- Customers ---- */
+  /* ---------------- Customers ---------------- */
   findAllCustomers() {
     return this.userRepo.find({
       where: { vai_tro: 'khachhang' },
@@ -38,7 +37,7 @@ export class UsersService {
     return { message: 'Đã mở khóa tài khoản', id: user.id_nguoidung };
   }
 
-  /* ---- Me profile ---- */
+  /* ---------------- Me profile ---------------- */
   async getMe(userId: number) {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User không tồn tại');
@@ -86,5 +85,59 @@ export class UsersService {
       { anh_dai_dien: avatarUrl } as any,
     );
     return { ok: true, avatar_url: avatarUrl };
+  }
+
+  async createOrUpdatePrimaryAddress(
+    userId: number,
+    payload: any,
+  ) {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User không tồn tại');
+
+    // --- Chuẩn hoá/alias các trường nhận từ FE ---
+    const get = (obj: any, keys: string[]) => {
+      for (const k of keys) {
+        const v = obj?.[k];
+        if (typeof v === 'string' && v.trim() !== '') return v.trim();
+      }
+      return '';
+    };
+
+    const name  = get(payload, ['name', 'ho_ten', 'fullname']) || (user.ho_ten ?? '');
+    const phone = get(payload, ['phone', 'so_dien_thoai', 'tel']) || (user.so_dien_thoai ?? '');
+
+    const city   = get(payload, ['city', 'province', 'thanh_pho', 'tinh', 'thanhPho']);
+    const ward   = get(payload, ['ward', 'xa', 'phuong', 'phuong_xa', 'phuongXa']);
+    const detail = get(payload, ['detail', 'address', 'dia_chi_cu_the', 'diaChiCuThe', 'street']);
+
+    // --- Kiểm tra bắt buộc ---
+    if (!detail || !city) {
+      throw new BadRequestException('Thiếu dữ liệu địa chỉ');
+    }
+
+    // --- Ghép format theo yêu cầu (bỏ phần rỗng) ---
+    const parts: string[] = [];
+    if (detail) parts.push(`Địa chỉ cụ thể: ${detail}`);
+    if (ward)   parts.push(`Phường/Xã ${ward}`);
+    if (city)   parts.push(`Thành phố/Tỉnh ${city}`);
+    const dia_chi = parts.join(' - ');
+
+    // --- Lưu vào DB ---
+    await this.userRepo.update(
+      { id_nguoidung: userId } as any,
+      {
+        dia_chi,
+        ho_ten: name || user.ho_ten,
+        so_dien_thoai: phone || user.so_dien_thoai,
+      } as any,
+    );
+
+    return { ok: true, dia_chi };
+  }
+   async clearAddress(userId: number) {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User không tồn tại');
+    await this.userRepo.update({ id_nguoidung: userId } as any, { dia_chi: null } as any);
+    return { ok: true };
   }
 }

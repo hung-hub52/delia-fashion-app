@@ -2,7 +2,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { collectionProducts } from "@/data/collections";
-import { calculateDiscount } from "@/utils/price"; // thêm dòng này
+import { calculateDiscount } from "@/utils/price";
+
+// ✅ Format số tiền nhất quán (không dùng toLocaleString)
+function formatPrice(price) {
+  if (!price) return "0";
+  return String(price).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+}
 
 export default function ProductSection({ title }) {
   const collections = [
@@ -111,14 +117,14 @@ export default function ProductSection({ title }) {
                     {product.name}
                   </h3>
 
-                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2" suppressHydrationWarning>
                     {hasDiscount && (
-                      <span className="text-gray-400 text-sm line-through">
-                        {product.oldPrice.toLocaleString()}₫
+                      <span className="text-gray-400 text-sm line-through" suppressHydrationWarning>
+                        {formatPrice(product.oldPrice)}₫
                       </span>
                     )}
-                    <span className="text-red-600 font-bold text-sm">
-                      {product.price.toLocaleString()}₫
+                    <span className="text-red-600 font-bold text-sm" suppressHydrationWarning>
+                      {formatPrice(product.price)}₫
                     </span>
                   </div>
                 </Link>

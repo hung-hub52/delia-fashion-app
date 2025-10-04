@@ -1,92 +1,227 @@
-// src/components/users/Profile hồ sơ cá nhân
-
+// src/components/users/Profile.jsx
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
+
+// ===== Helpers (độc lập) =====
+function looksLikeJwt(s) {
+  return typeof s === "string" && s.split(".").length === 3;
+}
+function getToken() {
+  if (typeof window === "undefined") return null;
+  const keys = ["token","access_token","jwt","authToken","Authorization","authorization","user","auth","session"];
+  for (const k of keys) {
+    let v = localStorage.getItem(k);
+    if (!v) continue;
+    try {
+      const obj = JSON.parse(v);
+      for (const kk of ["access_token","token","jwt","value"]) {
+        const cand = obj?.[kk];
+        if (typeof cand === "string" && looksLikeJwt(cand)) return cand;
+      }
+    } catch {}
+    v = String(v).replace(/^"(.*)"$/, "$1").trim();
+    if (v.startsWith("Bearer ")) v = v.slice(7).trim();
+    if (looksLikeJwt(v)) return v;
+  }
+  return null;
+}
+function updateLocalUser(next) {
+  try {
+    const cur = JSON.parse(localStorage.getItem("user") || "{}");
+    const merged = { ...cur, ...next };
+    localStorage.setItem("user", JSON.stringify(merged));
+    window.dispatchEvent(new Event("userUpdated"));
+  } catch {}
+}
 
 export default function Profile() {
   const [form, setForm] = useState({
-    username: "nmzmc1r3h2",
-    name: "Hung",
-    email: "namnguyen@gmail.com",
+    name: "",
+    email: "",
     phone: "",
-    gender: "",
-    birthday: { day: "", month: "", year: "" },
+    avatar: "/images/avatar-user.jpg",
   });
 
-  // State kiểm soát đổi username
-  const [editState, setEditState] = useState({
-    count: 0,
-    lastChanged: null,
-    lockedUntil: null,
-  });
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Load editState từ localStorage
+  // avatar state
+  const fileInputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
+  // ===== Hydrate từ localStorage trước cho nhanh =====
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("usernameEditState");
-      if (saved) setEditState(JSON.parse(saved));
-    }
+    if (typeof window === "undefined") return;
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      if (u && (u.name || u.email)) {
+        setForm((prev) => ({
+          ...prev,
+          name: u.ho_ten || u.name || "",
+          email: u.email || "",
+          phone: u.so_dien_thoai || u.phone || "",
+          avatar: u.anh_dai_dien || u.avatar || "/images/avatar-user.jpg",
+        }));
+      }
+    } catch {}
+  }, []);
+
+  // ===== Gọi BE /users/me để làm mới =====
+  useEffect(() => {
+    const t = getToken();
+    if (!t) return;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API}/users/me`, {
+          credentials: "include",
+          headers: { Authorization: `Bearer ${t}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.message || "Không tải được hồ sơ");
+
+        const mapped = {
+          name: data.ho_ten ?? data.name ?? "",
+          email: data.email ?? "",
+          phone: data.so_dien_thoai ?? data.phone ?? "",
+          avatar: data.anh_dai_dien || "/images/avatar-user.jpg",
+        };
+        setForm((prev) => ({ ...prev, ...mapped }));
+        updateLocalUser(mapped);
+      } catch {
+        // giữ UI hiện tại
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const handleChange = (field, value) => {
-    setForm({ ...form, [field]: value });
+    setForm((f) => ({ ...f, [field]: value }));
   };
 
-  const handleBirthdayChange = (field, value) => {
-    setForm({
-      ...form,
-      birthday: { ...form.birthday, [field]: value },
-    });
+  // ===== Upload avatar =====
+  const handlePickAvatar = () => {
+    if (!isEditing || uploading) return;
+    fileInputRef.current?.click();
   };
 
-  // Xử lý đổi username
-  const handleUsernameChange = (value) => {
-    const now = new Date();
-    let updated = { ...editState };
+  const handleAvatarSelected = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    // Reset số lần nếu qua ngày mới
-    if (
-      updated.lastChanged &&
-      new Date(updated.lastChanged).toDateString() !== now.toDateString()
-    ) {
-      updated.count = 0;
+    // validate
+    const okType = ["image/png", "image/jpeg"].includes(file.type);
+    if (!okType) {
+      toast.error("Chỉ chấp nhận ảnh .png hoặc .jpg");
+      e.target.value = "";
+      return;
     }
-
-    // Nếu đã quá 3 lần → khóa 3 ngày
-    if (updated.count >= 3) {
-      updated.lockedUntil = new Date(
-        now.getTime() + 3 * 24 * 60 * 60 * 1000
-      ).toISOString();
-      setEditState(updated);
-      localStorage.setItem("usernameEditState", JSON.stringify(updated));
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Kích thước tối đa 2MB");
+      e.target.value = "";
       return;
     }
 
-    // Cập nhật username
-    setForm({ ...form, username: value });
+    // preview tạm thời
+    const previewUrl = URL.createObjectURL(file);
+    setForm((prev) => ({ ...prev, avatar: previewUrl }));
 
-    // Tăng số lần đổi
-    updated.count += 1;
-    updated.lastChanged = now.toISOString();
+    try {
+      setUploading(true);
+      const t = getToken();
+      if (!t) throw new Error("Bạn cần đăng nhập lại");
 
-    setEditState(updated);
-    localStorage.setItem("usernameEditState", JSON.stringify(updated));
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch(`${API}/users/me/avatar`, {
+        method: "POST",
+        credentials: "include",
+        headers: { Authorization: `Bearer ${t}` },
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+        return;
+      }
+      if (!res.ok || !data?.avatar_url) {
+        throw new Error(data?.message || "Tải ảnh thất bại");
+      }
+
+      // cập nhật URL thật từ server
+      setForm((prev) => ({ ...prev, avatar: data.avatar_url }));
+      updateLocalUser({ anh_dai_dien: data.avatar_url, avatar: data.avatar_url });
+      toast.success("Cập nhật ảnh đại diện thành công!");
+    } catch (err) {
+      toast.error(err.message || "Tải ảnh thất bại");
+      // nếu upload lỗi thì không đổi avatar trong UI
+      // có thể reload từ localStorage
+      try {
+        const u = JSON.parse(localStorage.getItem("user") || "{}");
+        setForm((prev) => ({ ...prev, avatar: u.anh_dai_dien || u.avatar || "/images/avatar-user.jpg" }));
+      } catch {}
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
+    if (!isEditing) return;
 
-    if (form.phone && form.phone.length !== 10) {
-      alert("Số điện thoại phải gồm đúng 10 chữ số!");
+    // Validate
+    if (form.phone && !/^\d{10}$/.test(form.phone)) {
+      toast.error("Số điện thoại phải gồm đúng 10 chữ số!");
       return;
     }
 
-    alert("Đã lưu thông tin hồ sơ!");
-    console.log(form);
-  };
+    try {
+      setSaving(true);
+      const t = getToken();
+      if (!t) throw new Error("Bạn cần đăng nhập lại");
 
-  const isLocked =
-    editState.lockedUntil && new Date(editState.lockedUntil) > new Date();
+      // Chỉ cho phép cập nhật name, phone (email khóa)
+      const payload = {
+        ho_ten: form.name || "",
+        so_dien_thoai: form.phone || "",
+      };
+
+      const res = await fetch(`${API}/users/me`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${t}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || "Cập nhật thất bại");
+
+      updateLocalUser({
+        ho_ten: payload.ho_ten,
+        so_dien_thoai: payload.so_dien_thoai,
+        name: payload.ho_ten,
+        phone: payload.so_dien_thoai,
+      });
+
+      toast.success("Đã cập nhật hồ sơ!");
+      setIsEditing(false);
+    } catch (err) {
+      toast.error(err.message || "Cập nhật thất bại");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <>
@@ -99,29 +234,6 @@ export default function Profile() {
         <div className="grid grid-cols-3 gap-4">
           {/* Form trái */}
           <div className="col-span-2 space-y-3">
-            {/* Username */}
-            <div className="space-y-1">
-              <label className="block text-sm font-medium">Tên đăng nhập</label>
-              <input
-                type="text"
-                value={form.username}
-                onChange={(e) => handleUsernameChange(e.target.value)}
-                disabled={isLocked}
-                className={`w-full border px-3 py-1.5 rounded text-sm ${
-                  isLocked ? "bg-gray-100" : ""
-                }`}
-              />
-              {isLocked ? (
-                <p className="text-xs text-red-500">
-                  Bạn đã hết lượt đổi trong hôm nay, vui lòng đợi 3 ngày sau
-                </p>
-              ) : (
-                <p className="text-xs text-gray-500">
-                  Bạn chỉ có thể đổi tối đa 3 lần/ngày.
-                </p>
-              )}
-            </div>
-
             {/* Name */}
             <div className="space-y-1">
               <label className="block text-sm font-medium">Tên</label>
@@ -129,18 +241,21 @@ export default function Profile() {
                 type="text"
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                className="w-full border px-3 py-1.5 rounded text-sm"
+                disabled={!isEditing}
+                className={`w-full border px-3 py-1.5 rounded text-sm ${
+                  !isEditing ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
               />
             </div>
 
-            {/* Email */}
+            {/* Email (luôn khóa) */}
             <div className="space-y-1">
               <label className="block text-sm font-medium">Email</label>
               <input
                 type="email"
                 value={form.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                className="w-full border px-3 py-1.5 rounded text-sm"
+                disabled
+                className="w-full border px-3 py-1.5 rounded text-sm bg-gray-100 cursor-not-allowed"
               />
             </div>
 
@@ -150,14 +265,16 @@ export default function Profile() {
               <input
                 type="tel"
                 value={form.phone}
-                onChange={(e) => {
-                  const onlyNums = e.target.value.replace(/\D/g, "");
-                  setForm({ ...form, phone: onlyNums });
-                }}
+                onChange={(e) =>
+                  handleChange("phone", e.target.value.replace(/\D/g, ""))
+                }
+                disabled={!isEditing}
                 placeholder="Nhập số điện thoại"
-                className="w-full border px-3 py-1.5 rounded text-sm"
+                className={`w-full border px-3 py-1.5 rounded text-sm ${
+                  !isEditing ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
               />
-              {form.phone && form.phone.length !== 10 && (
+              {isEditing && form.phone && form.phone.length !== 10 && (
                 <p className="text-xs text-red-500">
                   Số điện thoại phải gồm đúng 10 chữ số
                 </p>
@@ -167,68 +284,76 @@ export default function Profile() {
 
           {/* Avatar */}
           <div className="flex flex-col items-center space-y-2">
-            <img
-              src="/images/avatar-user.jpg"
-              alt="avatar"
-              className="w-24 h-24 rounded-full object-cover"
+            <div className="relative">
+              <img
+                src={form.avatar || "/images/avatar-user.jpg"}
+                alt="avatar"
+                className="w-24 h-24 rounded-full object-cover border"
+              />
+              {uploading && (
+                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center text-white text-xs">
+                  Đang tải...
+                </div>
+              )}
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              onChange={handleAvatarSelected}
+              className="hidden"
             />
+
             <button
               type="button"
-              className="border px-3 py-1 text-sm rounded hover:bg-gray-100"
+              onClick={handlePickAvatar}
+              disabled={!isEditing || uploading}
+              className={`border px-3 py-1 text-sm rounded ${
+                !isEditing
+                  ? "bg-gray-100 cursor-not-allowed"
+                  : "hover:bg-gray-100"
+              }`}
+              title={!isEditing ? "Bật 'Chỉnh sửa thông tin' để đổi ảnh" : "Chọn ảnh (.png/.jpg ≤ 2MB)"}
             >
               Chọn Ảnh
             </button>
             <p className="text-xs text-gray-500 text-center">
-              Dung lượng file tối đa 1 MB <br /> Định dạng: .JPEG, .PNG
+              Dung lượng tối đa 2 MB <br /> Định dạng: .JPEG, .PNG
             </p>
           </div>
         </div>
 
-        {/* Gender + Year of birth */}
-        <div className="flex items-center gap-56">
-          {/* Gender */}
-          <div className="flex flex-col gap-2">
-            <label className="block text-sm font-medium mb-1">Giới tính</label>
-            <div className="flex gap-4">
-              {["Nam", "Nữ", "Khác"].map((g) => (
-                <label key={g} className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    name="gender"
-                    checked={form.gender === g}
-                    onChange={() => handleChange("gender", g)}
-                  />
-                  {g}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Year */}
-          <div className="flex flex-col gap-2">
-            <label className="block text-sm font-medium">Năm sinh</label>
-            <select
-              value={form.birthday.year}
-              onChange={(e) => handleBirthdayChange("year", e.target.value)}
-              className="border rounded px-2 py-1"
+        {/* Nút hành động */}
+        <div className="mt-4 flex items-center gap-3">
+          {!isEditing ? (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="border px-5 py-1.5 rounded text-sm hover:bg-gray-100"
+              disabled={loading}
             >
-              <option value="">Chọn năm</option>
-              {Array.from({ length: 60 }, (_, i) => 1965 + i).map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <button
-            type="submit"
-            className="bg-red-500 text-white px-5 py-1.5 rounded text-sm hover:bg-red-400"
-          >
-            Lưu
-          </button>
+              Chỉnh sửa thông tin
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-5 py-1.5 rounded text-sm border hover:bg-gray-100"
+                disabled={saving || uploading}
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={saving || uploading}
+                className="bg-red-500 text-white px-5 py-1.5 rounded text-sm hover:bg-red-400 disabled:opacity-60"
+              >
+                {saving ? "Đang lưu..." : "Lưu"}
+              </button>
+            </>
+          )}
         </div>
       </form>
     </>

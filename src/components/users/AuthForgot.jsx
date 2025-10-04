@@ -6,6 +6,9 @@ import { X, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import OtpForgot from "./OtpForgot";
 import { AnimatePresence, motion } from "framer-motion";
+import toast from "react-hot-toast";
+
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
 
 export default function AuthForgot({ open, onClose, email }) {
   const [loading, setLoading] = useState(false);
@@ -77,15 +80,36 @@ export default function AuthForgot({ open, onClose, email }) {
 
   if (!open) return null;
 
-  const handleVerify = () => {
+    const handleVerify = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    
+    try {
+      // Gửi request OTP forgot password
+      const res = await fetch(`${API}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data?.message || "Gửi OTP thất bại");
+      }
+      
       setVerified(true);
+      toast.success("✅ Đã gửi mã OTP đến email của bạn!");
+      
       setTimeout(() => {
         setShowOtp(true); // ✅ chuyển sang OTP
       }, 1000);
-    }, 800);
+      
+    } catch (error) {
+      toast.error(error.message || "Có lỗi xảy ra, vui lòng thử lại!");
+      setSliderX(0); // reset slider
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ✅ Nếu showOtp thì render OTP thay vì captcha

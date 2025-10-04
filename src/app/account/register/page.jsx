@@ -6,7 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { notifyUser } from "@/notify/NotifyUser";
 import TermsModal from "@/components/common/TermsModal";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -77,12 +77,30 @@ export default function RegisterPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Xác minh OTP thất bại");
 
-      notifyUser.success("🎉 Đăng ký thành công!");
+            notifyUser.success("🎉 Đăng ký thành công!");
       setShowOtpModal(false);
 
-      localStorage.setItem("token", data.access_token);
+      // Lưu thông tin đăng nhập
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("access_token", data.access_token);
+      }
 
-      setTimeout(() => router.push("/account/login"), 1200);
+      if (data.user) {
+        const userInfo = {
+          id: data.user.id_nguoidung,
+          name: data.user.ho_ten,
+          email: data.user.email,
+          role: data.user.vai_tro || "khachhang",
+          phone: data.user.so_dien_thoai || "",
+          address: data.user.dia_chi || "",
+          avatar: data.user.anh_dai_dien || "/images/avatar-user.jpg",
+          status: data.user.trang_thai,
+        };
+        localStorage.setItem("user", JSON.stringify(userInfo));
+      }
+
+      setTimeout(() => router.push("/"), 1200);
     } catch (err) {
       notifyUser.error(err.message);
     } finally {

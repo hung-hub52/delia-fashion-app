@@ -5,12 +5,16 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 
-export default function NewForgot({ onBack }) {
-  const [password, setPassword] = useState("");
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
+
+export default function NewForgot({ email, otp, onBack }) {
+    const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(3); // đếm ngược 3 giây
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   // ✅ rule kiểm tra password
@@ -20,11 +24,41 @@ export default function NewForgot({ onBack }) {
     /[a-z]/.test(password) &&
     /[A-Z]/.test(password);
 
-  const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isValidPassword) {
+    
+    if (!isValidPassword) {
+      toast.error("⚠️ Mật khẩu không đáp ứng yêu cầu!");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const res = await fetch(`${API}/auth/forgot-password/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          otp: otp,
+          new_password: password,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data?.message || "Đặt lại mật khẩu thất bại");
+      }
+      
+      toast.success("✅ Đặt lại mật khẩu thành công!");
       setSuccess(true);
       setCountdown(3);
+      
+    } catch (error) {
+      toast.error(error.message || "Có lỗi xảy ra, vui lòng thử lại!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,16 +154,23 @@ export default function NewForgot({ onBack }) {
           </li>
         </ul>
 
-        <button
+                <button
           type="submit"
-          disabled={!isValidPassword}
-          className={`w-full py-2 rounded transition ${
-            isValidPassword
+          disabled={!isValidPassword || loading}
+          className={`w-full py-2 rounded transition flex items-center justify-center gap-2 ${
+            isValidPassword && !loading
               ? "bg-pink-600 text-white hover:bg-pink-700"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
-          TIẾP THEO
+          {loading ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Đang xử lý...
+            </>
+          ) : (
+            "TIẾP THEO"
+          )}
         </button>
       </form>
     </div>

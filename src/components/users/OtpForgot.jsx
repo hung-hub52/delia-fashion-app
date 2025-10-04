@@ -4,16 +4,17 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import NewForgot from "./NewForgot"; 
+import NewForgot from "./NewForgot";
+import toast from "react-hot-toast";
+
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, ""); 
 
 export default function OtpForgot({ email, onBack }) {
   const [otp, setOtp] = useState(new Array(6).fill(""));
   const [timeLeft, setTimeLeft] = useState(60);
-  const [showNewPass, setShowNewPass] = useState(false);
+    const [showNewPass, setShowNewPass] = useState(false);
   const [error, setError] = useState("");
-
-  // ✅ giả sử đây là OTP chuẩn (sau này sẽ lấy từ API backend)
-  const correctOtp = "123456";
+  const [verifiedOtp, setVerifiedOtp] = useState(""); // Lưu OTP đã xác nhận
 
   // countdown resend
   useEffect(() => {
@@ -36,21 +37,18 @@ export default function OtpForgot({ email, onBack }) {
     }
   };
 
-  const handleSubmit = (e) => {
+    const handleSubmit = (e) => {
     e.preventDefault();
     const code = otp.join("");
 
-    if (otp.every((digit) => digit !== "")) {
-      if (code === correctOtp) {
-        setShowNewPass(true); // ✅ đúng thì chuyển sang NewForgot
-      } else {
-        setError("Mã OTP không chính xác, vui lòng thử lại!");
-        setOtp(new Array(6).fill("")); // clear lại
-        document.getElementById("otp-0").focus(); // focus lại ô đầu
-      }
-    } else {
+    if (!otp.every((digit) => digit !== "")) {
       setError("Vui lòng nhập đủ 6 số OTP!");
+      return;
     }
+
+    // Lưu OTP và chuyển sang bước nhập mật khẩu mới
+    setVerifiedOtp(code);
+    setShowNewPass(true);
   };
 
   return (
@@ -106,13 +104,34 @@ export default function OtpForgot({ email, onBack }) {
                 Vui lòng chờ {timeLeft} giây để gửi lại.
               </p>
             ) : (
-              <button
-                type="button"
-                onClick={() => setTimeLeft(60)}
-                className="text-xs text-pink-600 underline block mx-auto"
-              >
-                Gửi lại mã
-              </button>
+                          <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await fetch(`${API}/auth/forgot-password`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email }),
+                  });
+                  
+                  const data = await res.json();
+                  
+                  if (!res.ok) {
+                    throw new Error(data?.message || "Gửi lại OTP thất bại");
+                  }
+                  
+                  toast.success("✅ Đã gửi lại mã OTP!");
+                  setTimeLeft(60);
+                  setOtp(new Array(6).fill(""));
+                  setError("");
+                } catch (error) {
+                  toast.error(error.message);
+                }
+              }}
+              className="text-xs text-pink-600 underline block mx-auto"
+            >
+              Gửi lại mã
+            </button>
             )}
 
             <button
@@ -131,11 +150,10 @@ export default function OtpForgot({ email, onBack }) {
           exit={{ opacity: 0, x: -50 }}
           transition={{ duration: 0.4 }}
         >
-          <NewForgot
+                    <NewForgot
+            email={email}
+            otp={verifiedOtp}
             onBack={() => setShowNewPass(false)}
-            onSubmit={(newPass) => {
-              alert("Mật khẩu mới: " + newPass);
-            }}
           />
         </motion.div>
       )}

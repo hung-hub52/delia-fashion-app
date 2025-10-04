@@ -1,34 +1,11 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import CustomerDetailModal from "@/components/admin/customers/CustomerDetailModal";
 import AdminAuthModal from "@/components/admin/customers/AdminAuthModal";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import toast from "react-hot-toast";
-
-const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
-
-function looksLikeJwt(s) {
-  return typeof s === "string" && s.split(".").length === 3;
-}
-function getToken() {
-  if (typeof window === "undefined") return null;
-  const keys = ["token", "access_token", "jwt", "Authorization", "authorization", "auth", "session"];
-  for (const k of keys) {
-    let v = localStorage.getItem(k);
-    if (!v) continue;
-    try {
-      const obj = JSON.parse(v);
-      for (const kk of ["access_token", "token", "jwt", "value"]) {
-        const cand = obj?.[kk];
-        if (typeof cand === "string" && looksLikeJwt(cand)) return cand;
-      }
-    } catch {}
-    v = String(v).replace(/^"(.*)"$/, "$1").trim();
-    if (v.startsWith("Bearer ")) v = v.slice(7).trim();
-    if (looksLikeJwt(v)) return v;
-  }
-  return null;
-}
+import { fetchAPI } from "@/utils/api";
 
 export default function CustomerListPage() {
   const [customers, setCustomers] = useState([]);
@@ -44,14 +21,7 @@ export default function CustomerListPage() {
   useEffect(() => {
     (async () => {
       try {
-        const token = getToken();
-        const res = await fetch(`${API}/users/customers`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Không lấy được khách hàng");
-
+        const data = await fetchAPI(`/users/customers`);
         const mapped = data.map((c) => ({
           id: c.id_nguoidung,
           name: c.ho_ten,
@@ -64,7 +34,7 @@ export default function CustomerListPage() {
         }));
         setCustomers(mapped);
       } catch (err) {
-        toast.error(err.message);
+        toast.error(err.message || "Không lấy được khách hàng");
       }
     })();
   }, []);
@@ -79,25 +49,11 @@ export default function CustomerListPage() {
   const maskAddress = (address) => (!address ? "" : "*".repeat(address.length));
 
   const lockUser = async (id) => {
-    const token = localStorage.getItem("token");
-    const res = await fetch(`${API}/users/${id}/lock`, {
-      method: "PATCH",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Khóa tài khoản thất bại");
-    return data;
+    return fetchAPI(`/users/${id}/lock`, { method: "PATCH" });
   };
 
   const unlockUser = async (id) => {
-    const token = localStorage.getItem("token");
-    const res = await fetch(`${API}/users/${id}/unlock`, {
-      method: "PATCH",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Mở khóa tài khoản thất bại");
-    return data;
+    return fetchAPI(`/users/${id}/unlock`, { method: "PATCH" });
   };
 
   const onLock = async (id) => {
@@ -171,7 +127,7 @@ export default function CustomerListPage() {
                     className="text-blue-600 hover:underline font-medium"
                     onClick={() => {
                       setSelectedCustomer(c);
-                      setShowAuth(true); // xác thực ở modal
+                      setShowAuth(true);
                     }}
                   >
                     Xem

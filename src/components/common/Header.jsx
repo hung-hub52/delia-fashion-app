@@ -1,4 +1,6 @@
+// src/components/common/Header.jsx
 "use client";
+
 import Link from "next/link";
 import { User, ShoppingCart, Home, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -6,32 +8,75 @@ import { useEffect, useState, useRef } from "react";
 import NavItem from "@/components/common/NavItem";
 import { nuItems, namItems, collectionSections } from "@/data/menus";
 
+// ✅ Helper đọc user từ localStorage (SSR-safe)
+function readUser() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// ✅ Helper xoá auth + phát sự kiện cho toàn app
+function clearAuthAndBroadcast() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+  } finally {
+    // Thông báo cho Header/Sidebar... cập nhật UI
+    window.dispatchEvent(new Event("userUpdated"));
+  }
+}
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Scroll effect
+  // Shadow khi scroll
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Lấy user từ localStorage
+  // 🔁 Load user lần đầu + subscribe các sự kiện cập nhật
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedUser = localStorage.getItem("user");
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+    const loadUser = () => setUser(readUser());
+    loadUser();
+
+    // cập nhật khi tab/route khác sửa localStorage
+    const onStorage = (e) => {
+      if (!e.key || e.key === "user" || e.key === "token" || e.key === "access_token") {
+        loadUser();
       }
-    }
+    };
+    window.addEventListener("storage", onStorage);
+
+    // cập nhật trong cùng tab (đổi mật khẩu -> logout, cập nhật avatar, v.v.)
+    window.addEventListener("userUpdated", loadUser);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("userUpdated", loadUser);
+    };
   }, []);
 
-  // Auto close khi click ngoài
+  // 🔁 Khi đổi route cũng đọc lại user (phòng trường hợp vừa logout ở trang khác)
+  useEffect(() => {
+    setUser(readUser());
+  }, [pathname]);
+
+  // Đóng menu user khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -43,10 +88,15 @@ export default function Header() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    clearAuthAndBroadcast();
     setUser(null);
     router.push("/"); // về trang chủ
   };
+
+  const avatar =
+    user?.avatar || user?.anh_dai_dien || "/images/avatar-user.jpg";
+  const displayName =
+    user?.name || user?.ho_ten || (user?.email ? user.email.split("@")[0] : "");
 
   return (
     <header
@@ -68,25 +118,39 @@ export default function Header() {
       </div>
 
       {/* Nav */}
-      <nav className="w-full bg-white">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+      <nav className="w-full bg-white relative">
+        <div className="max-w-full mx-auto flex flex-nowrap items-center justify-between gap-3 lg:gap-4 px-4 lg:px-8 xl:px-12 py-3.5">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            className="lg:hidden text-gray-800 hover:text-pink-600 flex-shrink-0"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+
           {/* Logo */}
           <Link
             href="/"
-            className="text-2xl font-bold tracking-widest text-gray-800 hover:text-pink-600 transition-colors"
+            className="text-xl lg:text-2xl xl:text-3xl font-bold tracking-widest text-gray-800 hover:text-pink-600 transition-colors whitespace-nowrap flex-shrink-0"
           >
             DELIA ELLY
           </Link>
 
           {/* Menu */}
-          <ul className="hidden md:flex items-center space-x-8">
+          <ul className="hidden lg:flex items-center space-x-3 xl:space-x-5 flex-shrink-0">
             <Link
               href="/"
               className={`flex items-center gap-1 px-2 py-1 transition-colors ${
                 pathname === "/"
                   ? "text-pink-600 border-b-2 border-pink-600"
                   : "text-gray-800 hover:text-pink-600"
-              } text-sm md:text-base font-medium tracking-wide uppercase`}
+              } text-sm lg:text-base font-medium tracking-wide uppercase whitespace-nowrap`}
             >
               <Home size={18} className="mb-0.5" />
               <span>Trang chủ</span>
@@ -118,31 +182,31 @@ export default function Header() {
           </ul>
 
           {/* Search + User + Cart */}
-          <div className="flex items-center space-x-4 text-gray-800 relative">
+          <div className="flex items-center space-x-4 text-gray-800 relative flex-shrink-0">
             <input
               type="text"
               placeholder="Tìm kiếm..."
-              className="border rounded-full px-4 py-1 focus:outline-none text-sm bg-gray-50"
+              className="hidden lg:block border rounded-full px-4 py-1.5 focus:outline-none text-sm bg-gray-50 w-36"
             />
 
             {/* User */}
             {!user ? (
-              <Link href="/account/login" className="hover:text-pink-600">
-                <User size={22} />
+              <Link href="/account/login" className="hover:text-pink-600 flex-shrink-0">
+                <User size={20} />
               </Link>
             ) : (
-              <div className="relative" ref={menuRef}>
+              <div className="relative flex-shrink-0" ref={menuRef}>
                 <button
-                  onClick={() => setMenuOpen(!menuOpen)}
+                  onClick={() => setMenuOpen((v) => !v)}
                   className="flex items-center gap-2 hover:text-pink-600"
                 >
                   <img
-                    src={user.avatar || "/images/avatar-user.jpg"}
+                    src={avatar}
                     alt="avatar"
-                    className="w-8 h-8 rounded-full"
+                    className="w-9 h-9 rounded-full object-cover border-2 border-gray-200"
                   />
-                  <span className="hidden md:inline text-sm font-medium">
-                    {user.name || user.email.split("@")[0]}
+                  <span className="hidden lg:inline text-sm font-medium whitespace-nowrap">
+                    {displayName}
                   </span>
                 </button>
 
@@ -154,11 +218,7 @@ export default function Header() {
                     </div>
 
                     <Link
-                      href={
-                        user.role === "admin"
-                          ? "/admin"
-                          : "/users/menuaccount/profile"
-                      }
+                      href={user.role === "admin" ? "/admin" : "/users/menuaccount/profile"}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setMenuOpen(false)}
                     >
@@ -180,11 +240,74 @@ export default function Header() {
             )}
 
             {/* Cart */}
-            <Link href="/users/cart" className="hover:text-pink-600">
-              <ShoppingCart size={22} />
+            <Link href="/users/cart" className="hover:text-pink-600 flex-shrink-0">
+              <ShoppingCart size={20} />
             </Link>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-white border-t shadow-lg absolute w-full left-0 top-full z-40">
+            <div className="px-6 py-4 space-y-3">
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block py-2 ${
+                  pathname === "/"
+                    ? "text-pink-600 font-semibold"
+                    : "text-gray-800 hover:text-pink-600"
+                }`}
+              >
+                Trang chủ
+              </Link>
+              <Link
+                href="/users/women"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-gray-800 hover:text-pink-600"
+              >
+                Nữ
+              </Link>
+              <Link
+                href="/users/men"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-gray-800 hover:text-pink-600"
+              >
+                Nam
+              </Link>
+              <Link
+                href="/users/collection"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-gray-800 hover:text-pink-600"
+              >
+                Bộ sưu tập
+              </Link>
+              <Link
+                href="/users/blog"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-gray-800 hover:text-pink-600"
+              >
+                Tin tức
+              </Link>
+              <Link
+                href="/users/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-gray-800 hover:text-pink-600"
+              >
+                Giới thiệu
+              </Link>
+
+              {/* Mobile Search */}
+              <div className="pt-2">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm..."
+                  className="w-full border rounded-full px-4 py-2 focus:outline-none text-sm bg-gray-50"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
     </header>
   );
