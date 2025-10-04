@@ -5,6 +5,8 @@ import { X } from "lucide-react";
 import { useCategoriesContext } from "@/context/CategoriesContext";
 import { useInventory } from "@/context/InventoryContext";
 
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
+
 function Label({ children, required = false }) {
   return (
     <label className="block text-sm font-medium text-gray-700">
@@ -16,16 +18,16 @@ function Label({ children, required = false }) {
 
 const initialForm = {
   name: "",
-  sku: "",
+  sku: "", // sẽ auto-fill
   category: "",
   parentCategory: "",
   retailPrice: "",
   importPrice: "",
   description: "",
-  weight: "", // số lượng nhập
+  weight: "",           // số lượng nhập
   unit: "Cái",
   branch: "",
-  initialStock: "", // tồn kho ban đầu
+  initialStock: "",     // tồn kho ban đầu
   cost: "",
   image: null,
   initWarehouse: false,
@@ -43,18 +45,57 @@ export default function AddProductsModal({ open, onClose, onSave }) {
     ...new Set(categories.map((c) => c.parentName).filter(Boolean)),
   ];
   const [selectedParent, setSelectedParent] = useState("");
-  const childOptions = categories.filter(
-    (c) => c.parentName === selectedParent
-  );
+  const childOptions = categories.filter((c) => c.parentName === selectedParent);
 
-  // Reset khi mở modal
+  // ---------- Helper: Lấy SKU tiếp theo ----------
+  const computeNextFromList = (items = []) => {
+    let maxNum = 0;
+    for (const it of items) {
+      const raw = it?.sku ?? it?.ma_san_pham ?? it?.ma ?? it?.code ?? "";
+      const m = String(raw).match(/^SP(\d+)$/i);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (!Number.isNaN(n)) maxNum = Math.max(maxNum, n);
+      }
+    }
+    return `SP${maxNum + 1 || 1}`;
+  };
+
+  const fetchNextSku = async () => {
+    try {
+      // 1) Thử endpoint chuyên dụng (nếu backend có)
+      const res = await fetch(`${API}/products/next-sku`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data?.sku) return String(data.sku);
+      }
+    } catch {}
+    try {
+      // 2) Fallback: lấy list và tự tính
+      const res = await fetch(`${API}/products?page=1&limit=500`, { credentials: "include" });
+      const data = await res.json().catch(() => ({}));
+      const items = Array.isArray(data) ? data : data.items || data.data || [];
+      return computeNextFromList(items);
+    } catch {
+      // 3) Cuối cùng vẫn đảm bảo trả về SP1+
+      return "SP1";
+    }
+  };
+
+  // Reset + auto SKU khi mở modal
   useEffect(() => {
+    let alive = true;
     if (open) {
       setClosing(false);
-      setFormData(initialForm);
       setErrors({});
       setSelectedParent("");
+      (async () => {
+        const nextSku = await fetchNextSku();
+        if (!alive) return;
+        setFormData({ ...initialForm, sku: nextSku });
+      })();
     }
+    return () => { alive = false; };
   }, [open]);
 
   const handleClose = () => {
@@ -67,17 +108,17 @@ export default function AddProductsModal({ open, onClose, onSave }) {
     }, 300);
   };
 
-  // ⚠️ Đồng bộ 2 field số lượng: nhập cái này thì set cái kia
+  // Đồng bộ 2 field số lượng: nhập cái này thì set cái kia
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => {
       let updated = { ...prev, [name]: value };
 
       if (name === "weight") {
-        updated.initialStock = value; // đồng bộ
+        updated.initialStock = value;
       }
       if (name === "initialStock") {
-        updated.weight = value; // đồng bộ
+        updated.weight = value;
       }
       return updated;
     });
@@ -88,13 +129,12 @@ export default function AddProductsModal({ open, onClose, onSave }) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
       const fd = new FormData();
       fd.append("file", file);
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const res = await fetch(`${API}/products/upload-image`, {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: token ? { Authorization: `Bearer ${String(token).replace(/^"|"$/g, "")}` } : {},
         body: fd,
       });
       const data = await res.json().catch(() => ({}));
@@ -106,21 +146,27 @@ export default function AddProductsModal({ open, onClose, onSave }) {
     }
   };
 
-  const handleSubmit = () => {
+  const ensureSku = async () => {
+    let sku = (formData.sku || "").trim();
+    if (!sku) sku = await fetchNextSku();
+    // nếu user cố xóa nội dung ô SKU (dù là readOnly), vẫn đảm bảo phát sinh lại
+    return sku || "SP1";
+  };
+
+  const handleSubmit = async () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên sản phẩm";
-    if (!formData.sku.trim()) newErrors.sku = "Vui lòng nhập mã sản phẩm";
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
+
+    const autoSku = await ensureSku();
 
     // Chuẩn hoá số
     const normalized = {
       ...formData,
-      retailPrice:
-        formData.retailPrice === "" ? 0 : Number(formData.retailPrice),
-      importPrice:
-        formData.importPrice === "" ? 0 : Number(formData.importPrice),
-      // số lượng: ưu tiên initialStock || weight
+      sku: autoSku,
+      retailPrice: formData.retailPrice === "" ? 0 : Number(formData.retailPrice),
+      importPrice: formData.importPrice === "" ? 0 : Number(formData.importPrice),
       initialStock:
         formData.initialStock === "" && formData.weight !== ""
           ? Number(formData.weight)
@@ -134,12 +180,9 @@ export default function AddProductsModal({ open, onClose, onSave }) {
     };
 
     try {
-      // cập nhật danh sách sản phẩm (parent)
       onSave(normalized);
-
-      // đẩy sang kho nếu tick
       if (normalized.initWarehouse) {
-        addToInventory(normalized); // InventoryContext đã đọc initialStock/weight đúng
+        addToInventory(normalized);
       }
     } catch (err) {
       console.error("❌ Lỗi khi thêm sản phẩm:", err);
@@ -182,9 +225,7 @@ export default function AddProductsModal({ open, onClose, onSave }) {
                 onChange={handleChange}
                 className="w-full rounded-lg border p-2 focus:ring-2 focus:ring-sky-400"
               />
-              {errors.name && (
-                <p className="text-sm text-red-500 mt-1">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
             </div>
 
             <div>
@@ -227,25 +268,29 @@ export default function AddProductsModal({ open, onClose, onSave }) {
               </div>
             </div>
 
+            {/* SKU: Tự sinh + khóa sửa */}
             <div>
-              <Label required>Mã sản phẩm</Label>
+              <Label>Mã sản phẩm</Label>
               <input
                 type="text"
                 name="sku"
                 value={formData.sku}
-                onChange={handleChange}
-                className="w-full rounded-lg border p-2 focus:ring-2 focus:ring-sky-400"
+                readOnly
+                className="w-full rounded-lg border p-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+                onFocus={async () => {
+                  // nếu vì lý do gì đó đang rỗng, auto fill lại khi focus
+                  if (!formData.sku) {
+                    const next = await fetchNextSku();
+                    setFormData((prev) => ({ ...prev, sku: next }));
+                  }
+                }}
               />
-              {errors.sku && (
-                <p className="text-sm text-red-500 mt-1">{errors.sku}</p>
-              )}
+              <p className="text-xs text-gray-500 mt-1">Mã được tự động tạo (ví dụ: SP7)</p>
             </div>
           </div>
 
           {/* Giá */}
-          <h3 className="mt-6 text-lg font-semibold text-gray-800">
-            💰 GIÁ SẢN PHẨM
-          </h3>
+          <h3 className="mt-6 text-lg font-semibold text-gray-800">💰 GIÁ SẢN PHẨM</h3>
           <div className="mt-2 grid grid-cols-2 gap-4">
             <div>
               <Label required>Giá bán</Label>
@@ -294,27 +339,18 @@ export default function AddProductsModal({ open, onClose, onSave }) {
                     />
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({ ...prev, image: "" }))
-                      }
+                      onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
                       className="absolute top-1 right-1 rounded-full bg-red-500 text-white p-1 hover:bg-red-600 shadow"
                     >
                       ✕
                     </button>
                   </div>
                 ) : (
-                  <span className="mb-3 text-gray-400">
-                    Kéo & thả ảnh vào đây
-                  </span>
+                  <span className="mb-3 text-gray-400">Kéo & thả ảnh vào đây</span>
                 )}
                 <label className="cursor-pointer rounded bg-sky-500 px-4 py-2 text-white hover:bg-sky-600">
                   Chọn tệp tải lên
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                 </label>
               </div>
             </div>

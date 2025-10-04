@@ -10,13 +10,33 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs';
+import { DataSource } from 'typeorm';
+import { SuggestQueryDto } from './dto/suggest-query.dto';
 
 @ApiTags('products')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly service: ProductsService) {}
+  constructor(private readonly service: ProductsService, private ds: DataSource) {}
+
+  @Get('suggest')
+  async suggest(@Query() query: SuggestQueryDto) {
+    const keyword = (query.q ?? '').trim();
+    const lim = Math.min(50, Math.max(1, parseInt(query.limit ?? '12', 10) || 12));
+
+    if (!keyword) return [];
+
+    const rows = await this.ds.query(
+      `SELECT id_san_pham AS id, ten_san_pham AS name, gia_ban AS price
+       FROM san_pham
+       WHERE ten_san_pham LIKE ?
+       ORDER BY ten_san_pham ASC
+       LIMIT ?`,
+      [`%${keyword}%`, lim],
+    );
+    return rows;
+  }
 
   @Get() findAll(@Query() q: PaginateQueryDto) { return this.service.findAll(q); }
   @Get(':id') findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
@@ -55,4 +75,6 @@ export class ProductsController {
     const url = `${baseUrl}/uploads/products/${file.filename}`;
     return { ok: true, image_url: url };
   }
+
+ 
 }
