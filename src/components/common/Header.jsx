@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import NavItem from "@/components/common/NavItem";
 import { nuItems, namItems, collectionSections } from "@/data/menus";
+import { useCart } from "@/context/CartContext"; // 👈 import context
 
 // ✅ Helper đọc user từ localStorage (SSR-safe)
 function readUser() {
@@ -42,7 +43,14 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Shadow khi scroll
+
+  const { cart, setCart } = useCart(); // 👈 lấy cart từ context
+  const totalQty = cart.reduce((sum, item) => sum + item.qty, 0); // 👈 tính tổng số sp
+
+  const [shake, setShake] = useState(false); // 👈 state cho hiệu ứng rung
+
+  // Scroll effect
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
@@ -86,6 +94,21 @@ export default function Header() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // 👇 Lắng nghe sự kiện cart-updated
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      const savedCart = localStorage.getItem("cart");
+      if (savedCart) {
+        setCart(JSON.parse(savedCart)); // update context
+      }
+      setShake(true);
+      setTimeout(() => setShake(false), 500); // reset rung sau 0.5s
+    };
+
+    window.addEventListener("cart-updated", handleCartUpdate);
+    return () => window.removeEventListener("cart-updated", handleCartUpdate);
+  }, [setCart]);
 
   const handleLogout = () => {
     clearAuthAndBroadcast();
@@ -159,11 +182,9 @@ export default function Header() {
             <li>
               <NavItem title="Nữ" href="/users/women" items={nuItems} />
             </li>
-
             <li>
               <NavItem title="Nam" href="/users/men" items={namItems} />
             </li>
-
             <li>
               <NavItem
                 title="Bộ sưu tập"
@@ -171,11 +192,9 @@ export default function Header() {
                 sections={collectionSections}
               />
             </li>
-
             <li>
               <NavItem title="Tin tức" href="/users/blog" />
             </li>
-
             <li>
               <NavItem title="Giới thiệu" href="/users/about" />
             </li>
@@ -210,13 +229,11 @@ export default function Header() {
                   </span>
                 </button>
 
-                {/* Dropdown menu */}
                 {menuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-50">
                     <div className="px-4 py-2 text-sm text-gray-700 border-b">
                       {user.role === "admin" ? "Quản trị viên" : "Khách hàng"}
                     </div>
-
                     <Link
                       href={user.role === "admin" ? "/admin" : "/users/menuaccount/profile"}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -224,7 +241,6 @@ export default function Header() {
                     >
                       Trang cá nhân
                     </Link>
-
                     <button
                       onClick={() => {
                         handleLogout();
@@ -240,8 +256,13 @@ export default function Header() {
             )}
 
             {/* Cart */}
-            <Link href="/users/cart" className="hover:text-pink-600 flex-shrink-0">
-              <ShoppingCart size={20} />
+
+            <Link href="/users/cart" className="relative hover:text-pink-600">
+              <ShoppingCart size={22} className={shake ? "shake" : ""} />
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {totalQty}
+              </span>
+
             </Link>
           </div>
         </div>
