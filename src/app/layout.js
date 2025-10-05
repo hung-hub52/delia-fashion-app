@@ -6,6 +6,9 @@ import { ThemeProvider } from "next-themes";
 
 import ConditionalLayout from "@/components/common/ConditionalLayout";
 import { CartProvider } from "@/context/CartContext"; // 👈 import CartProvider
+import ContactFloating from "@/components/common/ContactFloating";
+import CustomerCareChat from "@/components/common/CustomerCareChat";
+import ClientChatMount from "@/components/common/ClientChatMount";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -27,9 +30,13 @@ export default function RootLayout({ children }) {
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <CartProvider>
             <Toaster position="top-center" reverseOrder={false} />
-            <ConditionalLayout>{children}</ConditionalLayout>
+            <ConditionalLayout>{children}
+            <ContactFloating/>
+            <CustomerCareChat  />
+            </ConditionalLayout>
           </CartProvider>
         </ThemeProvider>
+        <ClientChatMount />
       </body>
     </html>
   );
