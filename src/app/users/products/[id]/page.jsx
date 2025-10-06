@@ -1,12 +1,8 @@
-//src/app/users/products/[id]/page.jsx
-
 "use client";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
-
-
 import { collectionProducts } from "@/data/collections";
 
 export default function ProductDetailPage() {
@@ -36,36 +32,59 @@ export default function ProductDetailPage() {
     });
   };
 
-  const handleMouseLeave = () => {
-    setZoomStyle({ transform: "scale(1)" });
+  const handleMouseLeave = () => setZoomStyle({ transform: "scale(1)" });
+
+  // ✅ Thêm vào giỏ
+  const addToCart = () => {
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const pid = String(product.id);
+
+    const existingIndex = cart.findIndex((item) => item.id === pid);
+    if (existingIndex > -1) {
+      cart[existingIndex].qty += 1;
+    } else {
+      cart.push({
+        id: pid,
+        name: product.name,
+        img: product.images[0],
+        price: product.oldPrice || product.price,
+        finalPrice: product.price,
+        qty: 1,
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("cartUpdated"));
+    toast.success("🛒 Đã thêm vào giỏ hàng!");
+    setTimeout(() => router.push("/users/cart"), 1200);
   };
 
- const addToCart = () => {
-   let cart = JSON.parse(localStorage.getItem("cart")) || [];
-   const pid = String(product.id);
+  // ✅ Đặt hàng nhanh → đi thẳng checkout
+  const handleQuickCheckout = () => {
+    const user = JSON.parse(localStorage.getItem("user")); // ✅ đổi sang 'user'
+    if (!user) {
+      toast.error("⚠️ Vui lòng đăng nhập trước khi đặt hàng!");
+      router.push("/account/login");
+      return;
+    }
 
-   const existingIndex = cart.findIndex((item) => item.id === pid);
-   if (existingIndex > -1) {
-     cart[existingIndex].qty += 1;
-   } else {
-     cart.push({
-       id: pid,
-       name: product.name,
-       img: product.images[0],
-       price: product.oldPrice || product.price,
-       finalPrice: product.price,
-       qty: 1,
-     });
-   }
+    // Lưu sản phẩm hiện tại vào checkoutItems
+    const checkoutItem = [
+      {
+        id: String(product.id),
+        name: product.name,
+        img: product.images[0],
+        price: product.oldPrice || product.price,
+        finalPrice: product.price,
+        qty: 1,
+      },
+    ];
 
-   localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem("checkoutItems", JSON.stringify(checkoutItem));
 
-  window.dispatchEvent(new Event("cart-updated"));
-
-   toast.success("Đã thêm vào giỏ hàng");
-   setTimeout(() => router.push("/users/cart"), 1200);
- };
-
+    toast.success("🛍️ Đang chuyển đến trang thanh toán...");
+    setTimeout(() => router.push("/users/checkout"), 800);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -153,22 +172,21 @@ export default function ProductDetailPage() {
           </ul>
         </div>
 
-        {/* Nút */}
+        {/* Nút hành động */}
         <div className="flex gap-4 mb-8">
           <button
-            onClick={() => router.push("/users/checkout")}
+            onClick={handleQuickCheckout}
             className="bg-red-600 text-white px-6 py-3 rounded hover:bg-red-700"
           >
             ĐẶT HÀNG NHANH
           </button>
+
           <button
             onClick={() => {
-              const user = localStorage.getItem("user");
+              const user = JSON.parse(localStorage.getItem("user"));
               if (!user) {
-                // ❌ chưa đăng nhập → chuyển tới login
                 router.push("/account/login");
               } else {
-                // ✅ đã đăng nhập → thêm giỏ hàng
                 addToCart();
               }
             }}
@@ -178,7 +196,7 @@ export default function ProductDetailPage() {
           </button>
         </div>
 
-        {/* Cam kết dịch vụ */}
+        {/* Cam kết */}
         <div className="space-y-4 border-t pt-6 text-gray-800">
           <div className="flex items-start gap-3">
             <span className="text-red-600 text-xl">👍</span>
@@ -189,7 +207,6 @@ export default function ProductDetailPage() {
               </p>
             </div>
           </div>
-
           <div className="flex items-start gap-3">
             <span className="text-red-600 text-xl">🛡️</span>
             <div>
@@ -199,7 +216,6 @@ export default function ProductDetailPage() {
               </p>
             </div>
           </div>
-
           <div className="flex items-start gap-3">
             <span className="text-red-600 text-xl">✔️</span>
             <div>
