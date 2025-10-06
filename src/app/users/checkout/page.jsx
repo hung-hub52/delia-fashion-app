@@ -16,17 +16,13 @@ export default function CheckoutPage() {
 
   // ======= Load dữ liệu từ localStorage =======
   useEffect(() => {
-    // ✅ Load sản phẩm đã chọn từ localStorage
     const storedItems = localStorage.getItem("checkoutItems");
-    if (storedItems) {
-      setItems(JSON.parse(storedItems));
-    }
+    if (storedItems) setItems(JSON.parse(storedItems));
 
-    // ✅ Load voucher chỉ nếu được áp dụng thủ công
     const appliedVoucher = sessionStorage.getItem("appliedShopVoucher");
     if (appliedVoucher) {
       setShopVoucher(appliedVoucher.trim());
-      sessionStorage.removeItem("appliedShopVoucher"); // chỉ 1 lần
+      sessionStorage.removeItem("appliedShopVoucher");
     }
   }, []);
 
@@ -35,7 +31,6 @@ export default function CheckoutPage() {
     (sum, item) => sum + item.finalPrice * item.qty,
     0
   );
-
   const defaultShipping = 40000;
   let totalShipping = items.reduce(
     (sum, item) => sum + (item.shipping ?? defaultShipping),
@@ -44,32 +39,25 @@ export default function CheckoutPage() {
 
   let discount = 0;
 
-  // ======= Áp dụng mã giảm toàn đơn =======
-  if (voucher === "Fennik") {
-    totalShipping = 0;
-  }
-
+  if (voucher === "Fennik") totalShipping = 0;
   if (voucher === "Veera" && total <= 200000) {
     discount += 50000;
     totalShipping = 5000;
   }
-
   if (voucher === "Yorn" && total >= 300000) {
     discount += 200000;
     totalShipping = 5000;
   }
-
   if (voucher === "Alice" && total >= 500000) {
     discount += 400000;
     totalShipping = 5000;
   }
-
   if (voucher === "Qi" && total >= 1000000) {
     discount += 800000;
     totalShipping = 0;
   }
 
-  // Áp dụng voucher shop
+  // Voucher shop riêng
   let shopDiscount = 0;
   switch (shopVoucher?.toUpperCase()) {
     case "SALE100":
@@ -97,7 +85,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    // ✅ 1. Tạo dữ liệu đơn hàng và lưu vào localStorage
+    // ✅ 1. Tạo dữ liệu đơn hàng local
     const existingOrders = JSON.parse(localStorage.getItem("orders")) || [];
     const newOrder = {
       id: Date.now(),
@@ -109,26 +97,23 @@ export default function CheckoutPage() {
       payment,
       createdAt: new Date().toLocaleString("vi-VN"),
       products: items,
+      note,
     };
 
     existingOrders.unshift(newOrder);
     localStorage.setItem("orders", JSON.stringify(existingOrders));
-
-    // ✅ 5. Phát tín hiệu để PurchasePage tự cập nhật
     window.dispatchEvent(new Event("ordersUpdated"));
 
-    // ✅ Xóa giỏ hàng
+    // ✅ 2. Xóa giỏ hàng
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     const updatedCart = cart.filter(
       (item) => !items.some((checkoutItem) => checkoutItem.id === item.id)
     );
     localStorage.setItem("cart", JSON.stringify(updatedCart));
     localStorage.removeItem("checkoutItems");
+    window.dispatchEvent(new Event("cartUpdated"));
 
-    // ✅ Thông báo cho CartPage và context reload
-    window.dispatchEvent(new Event("cartUpdated")); 
-
-    // ✅ 3. Nếu thanh toán bằng MoMo → mở sandbox
+    // ✅ 3. Xử lý thanh toán MoMo
     if (payment === "Ví MoMo") {
       try {
         const res = await fetch("/api/payment/momo", {
@@ -136,40 +121,66 @@ export default function CheckoutPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             amount: grandTotal,
-            orderInfo: "Thanh toán đơn hàng Fennik",
+            orderInfo: "Thanh toán đơn hàng Delia Elly qua MoMo",
           }),
         });
-
         const data = await res.json();
         console.log("✅ MoMo response:", data);
 
         if (data?.payUrl) {
           toast.success("Đang mở cổng thanh toán MoMo...");
-
-          // 👉 Mở trang MoMo sandbox trong tab mới
           window.open(data.payUrl, "_blank");
-
-          // 👉 Sau đó quay về trang pending (không reload)
-          setTimeout(() => {
-            router.push("/users/checkout/pending");
-          }, 1000);
+          setTimeout(() => router.push("/users/checkout/pending"), 1000);
         } else {
           toast.error("Không thể tạo liên kết thanh toán MoMo");
         }
       } catch (err) {
-        toast.error("Lỗi khi kết nối MoMo sandbox");
         console.error(err);
+        toast.error("Lỗi khi kết nối MoMo sandbox");
       }
       return;
     }
 
-    // ✅ 4. Nếu là COD hoặc VNPay → xử lý trực tiếp
+    // ✅ 4. Xử lý thanh toán VNPay
+    // ✅ Nếu thanh toán bằng VNPay
+    if (payment === "VNPay") {
+      try {
+        const res = await fetch("/api/payment/vnpay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: grandTotal,
+            orderInfo: "Thanh toán đơn hàng Delia Elly",
+          }),
+        });
+
+        const data = await res.json();
+        console.log("✅ VNPay response:", data);
+
+        if (data?.paymentUrl) {
+          toast.success("Đang mở cổng thanh toán VNPay...");
+          window.open(data.paymentUrl, "_blank");
+
+          setTimeout(() => {
+            router.push("/users/checkout/pending");
+          }, 1000);
+        } else {
+          console.error("❌ VNPay API error:", data);
+          toast.error("Không thể tạo liên kết thanh toán VNPay");
+        }
+      } catch (err) {
+        console.error("💥 Lỗi kết nối VNPay:", err);
+        toast.error("Không thể kết nối VNPay sandbox");
+      }
+      return;
+    }
+
+    // ✅ 5. COD – Thanh toán trực tiếp
     toast.success("🎉 Đặt hàng thành công!");
-    setTimeout(() => {
-      router.push("/users/checkout/pending");
-    }, 1000);
+    setTimeout(() => router.push("/users/checkout/pending"), 1000);
   };
 
+  // ======= Giao diện =======
   return (
     <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow text-gray-800">
       {/* Địa chỉ nhận hàng */}
@@ -220,7 +231,7 @@ export default function CheckoutPage() {
         ))
       )}
 
-      {/* Lời nhắn cho Shop */}
+      {/* Lời nhắn */}
       <div className="border rounded mb-4 bg-white">
         <div className="p-3 border-b flex items-center gap-3">
           <span className="font-semibold text-gray-700 whitespace-nowrap">
@@ -246,7 +257,7 @@ export default function CheckoutPage() {
             <div>
               <p className="font-medium text-teal-700">Nhanh</p>
               <p className="text-xs text-gray-500">
-                Nhận voucher trị giá 50.000₫ nếu đơn hàng được giao muộn
+                Nhận voucher trị giá 50.000₫ nếu đơn hàng giao muộn
               </p>
               <p className="text-xs text-gray-500">Được kiểm tra hàng</p>
             </div>
@@ -266,7 +277,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Voucher chọn mã */}
+      {/* Voucher */}
       <div className="border-b pb-4 mb-4 mt-4 flex justify-between items-center">
         <div>
           <h2 className="font-semibold text-lg mb-2">
