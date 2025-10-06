@@ -11,10 +11,10 @@ export default function CheckIf({ onClose }) {
         </h2>
         <ul className="space-y-2 text-sm text-gray-700">
           <li>🟢 Fennik: Freeship toàn bộ đơn hàng</li>
-          <li>🟡 Veera: Đơn &lt; 100k → giảm 20k</li>
-          <li>🔵 Yorn: Đơn ≥ 300k → giảm 200k</li>
-          <li>🟣 Alice: Đơn ≥ 500k → giảm 400k</li>
-          <li>🔴 Qi: Đơn ≥ 1 triệu → giảm 800k</li>
+          <li>🟡 Veera: Đơn &lt; 200k → giảm 50k & giảm 35k phí vận chuyển</li>
+          <li>🔵 Yorn: Đơn ≥ 300k → giảm 200k & giảm 35k phí vận chuyển</li>
+          <li>🟣 Alice: Đơn ≥ 500k → giảm 400k & giảm 35k phí vận chuyển</li>
+          <li>🔴 Qi: Đơn ≥ 1 triệu → giảm 800k & miễn phí vận chuyển</li>
         </ul>
         <div className="mt-6 flex justify-end">
           <button

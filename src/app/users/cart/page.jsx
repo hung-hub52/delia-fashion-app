@@ -4,25 +4,38 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
+import { toast, Toaster } from "react-hot-toast";
 
 export default function CartPage() {
   const { cart, setCart } = useCart();
   const [selectedItems, setSelectedItems] = useState([]);
   const router = useRouter();
+  const [voucherInput, setVoucherInput] = useState("");
+  const [isValid, setIsValid] = useState(null);
 
-  // Load giỏ hàng từ localStorage khi mở trang
+  // ✅ Load giỏ hàng từ localStorage khi mở trang + lắng nghe khi Checkout cập nhật
   useEffect(() => {
+  const loadCart = () => {
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       const parsed = JSON.parse(savedCart).map((item) => ({
         ...item,
         id: String(item.id),
       }));
-      setCart(parsed);
+      setCart(parsed); // ✅ cập nhật luôn context
+    } else {
+      setCart([]); // ✅ clear context
     }
-  }, []);
+  };
 
-  // Lưu lại localStorage khi cart thay đổi
+    loadCart();
+
+    // 🔔 Khi CheckoutPage xoá sản phẩm → tự cập nhật lại
+    window.addEventListener("cartUpdated", loadCart);
+    return () => window.removeEventListener("cartUpdated", loadCart);
+  }, [setCart]);
+
+  // ✅ Lưu lại localStorage khi cart thay đổi
   useEffect(() => {
     if (cart.length > 0) {
       localStorage.setItem("cart", JSON.stringify(cart));
@@ -30,6 +43,8 @@ export default function CartPage() {
       localStorage.removeItem("cart");
     }
   }, [cart]);
+
+  
 
   // Chọn/bỏ chọn tất cả
   const handleSelectAll = () => {
@@ -83,6 +98,7 @@ export default function CartPage() {
     .filter((item) => selectedItems.includes(item.id))
     .reduce((sum, item) => sum + item.finalPrice * item.qty, 0);
 
+  // ========================= UI ==========================
   return (
     <div className="max-w-6xl mx-auto bg-gray-100 py-6 px-4 text-gray-800">
       <h1 className="text-lg font-semibold mb-4">Giỏ hàng</h1>
@@ -107,6 +123,8 @@ export default function CartPage() {
         </div>
       ) : (
         <>
+          <Toaster position="top-center" reverseOrder={false} />
+
           {/* 1. Header */}
           <div className="bg-white rounded-t-lg shadow-sm">
             <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b text-sm font-medium text-gray-600">
@@ -210,26 +228,38 @@ export default function CartPage() {
               </div>
             ))}
           </div>
+
           {/* 3. Khuyến mãi toàn sàn */}
           <div className="px-12 py-2 bg-gray-200 border-t border-gray-100 text-sm text-gray-600 flex items-center gap-3 mt-3">
             <span className="text-red-500">🏷️ Thêm Shop Voucher</span>
+
             <div className="flex items-center gap-2">
               <input
-                type="text"
                 id="voucherInput"
-                placeholder="Nhập mã giảm giá"
-                className="border rounded px-3 py-1 text-sm border-gray-300"
+                type="text"
+                placeholder="Nhập mã giảm giá (VD: SALE200)"
+                className="border rounded px-3 py-1 text-sm border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
+
               <button
                 onClick={() => {
                   const voucher = document
                     .getElementById("voucherInput")
-                    .value.trim();
-                  if (voucher) {
-                    localStorage.setItem("shopVoucher", voucher); // 👉 lưu voucher vào localStorage
-                    alert(`Đã áp dụng mã: ${voucher}`);
+                    .value.trim()
+                    .toUpperCase();
+
+                  const validCodes = ["SALE100", "SALE200", "VIP300"];
+
+                  if (!voucher) {
+                    toast.error("Vui lòng nhập mã hợp lệ");
+                    return;
+                  }
+
+                  if (validCodes.includes(voucher)) {
+                    sessionStorage.setItem("appliedShopVoucher", voucher);
+                    toast.success(`Đã áp dụng mã: ${voucher}`);
                   } else {
-                    alert("Vui lòng nhập mã hợp lệ");
+                    toast.error("Mã không hợp lệ hoặc đã hết hạn");
                   }
                 }}
                 className="text-blue-600 underline hover:text-blue-800"

@@ -114,7 +114,7 @@ export const collectionProducts = {
     {
       id: "dong-ho-gshock-nam",
       key: "watch-men",
-      name: "Đồng Hồ GShock Nam",
+      name: "Đồng Hồ G  Shock Nam",
       gender: ["men"],
       images: ["/products/men/watchM.jpg"],
       price: 879000,
